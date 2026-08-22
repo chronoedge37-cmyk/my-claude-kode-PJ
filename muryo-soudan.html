@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>無料相談｜五行庵 宗玄</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Shippori+Mincho+B1:wght@600;700;800&family=Shippori+Antique+B1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12112c; --gold:#cfa15c; --gold-bright:#e8c384;
+  --ivory:#f3ecdd; --lavender:#d9d0f0; --red:#e8735c;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--ink);color:var(--ivory);font-family:'Shippori Antique B1',sans-serif;}
+h1,h2,h3{font-family:'Shippori Mincho B1',serif;word-break:keep-all;}
+
+/* ===== 流れ星背景(右上45度 → 左下45度) ===== */
+.stars{position:fixed;inset:-10vh -10vw;z-index:0;pointer-events:none;overflow:hidden;}
+.star{position:absolute;border-radius:50%;background:#fff;opacity:0;animation:flow linear infinite;}
+.star.red{background:var(--red);box-shadow:0 0 8px rgba(232,115,92,.85),0 0 18px rgba(232,115,92,.45);}
+@keyframes flow{
+  0%{transform:translate(0,0);opacity:0;}
+  8%{opacity:1;}
+  85%{opacity:1;}
+  100%{transform:translate(-150vw,150vh);opacity:0;}
+}
+.vignette{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 60% at 50% 15%,rgba(6,7,20,.08) 0%,rgba(6,7,20,.55) 60%,rgba(4,4,14,.93) 100%);}
+main{position:relative;z-index:1;}
+
+.wrap{max-width:560px;margin:0 auto;padding:5vh 1.4rem 8vh;}
+.eyebrow{font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.3em;color:var(--gold-bright);text-transform:uppercase;margin-bottom:.7rem;}
+.page-title{font-size:clamp(1.4rem,5vw,1.8rem);font-weight:800;margin-bottom:.7rem;}
+.page-sub{font-size:.84rem;color:var(--lavender);line-height:1.9;margin-bottom:2.2rem;}
+
+.panel{background:rgba(0,0,0,.3);border:1px solid rgba(232,195,132,.3);padding:1.7rem 1.4rem;margin-bottom:1.2rem;border-radius:2px;}
+.panel h2{font-size:1rem;color:var(--gold-bright);margin-bottom:1.1rem;}
+
+.field{margin-bottom:1.1rem;}
+.field label{display:block;font-size:.7rem;letter-spacing:.07em;color:var(--gold-bright);font-family:'Cinzel',serif;margin-bottom:.4rem;}
+.field label .req{color:#e29a8a;margin-left:.2rem;}
+input[type=text],select{
+  width:100%;padding:.68rem .6rem;background:rgba(255,255,255,.05);
+  border:1px solid rgba(232,195,132,.38);color:var(--ivory);font-size:.9rem;
+  font-family:'Shippori Antique B1',sans-serif;border-radius:1px;appearance:none;}
+select:focus,input:focus{outline:none;border-color:var(--gold-bright);}
+.field-row{display:flex;gap:.6rem;}
+.field-row .field{flex:1;}
+.radio-row{display:flex;gap:1.2rem;margin-top:.3rem;}
+.radio-row label{display:flex;align-items:center;gap:.35rem;font-size:.86rem;cursor:pointer;font-family:inherit;letter-spacing:0;color:var(--ivory);text-transform:none;}
+
+.btn-primary{
+  width:100%;padding:1.05rem;background:linear-gradient(135deg,var(--gold),#a5793a);
+  color:#1a1206;border:none;font-family:'Cinzel',serif;font-size:.8rem;
+  letter-spacing:.14em;text-transform:uppercase;font-weight:700;cursor:pointer;border-radius:2px;
+  text-decoration:none;display:block;text-align:center;box-shadow:0 8px 22px rgba(207,161,92,.25);}
+.hint{font-size:.74rem;color:var(--lavender);opacity:.65;margin-top:.6rem;line-height:1.7;}
+
+/* ===== 結果表示 ===== */
+#result{display:none;}
+.pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:1.2rem;}
+.pillar{background:rgba(0,0,0,.3);border:1px solid rgba(232,195,132,.3);text-align:center;padding:.8rem .3rem;}
+.pillar .role{font-family:'Cinzel',serif;font-size:.55rem;letter-spacing:.1em;color:var(--gold-bright);text-transform:uppercase;margin-bottom:.4rem;}
+.pillar .kanji{font-family:'Shippori Mincho B1',serif;font-size:1.3rem;}
+.pillar .sub{font-size:.6rem;color:var(--lavender);margin-top:.3rem;}
+.pillar.dm{border-color:var(--gold-bright);}
+
+.ebar-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;}
+.ebar-lbl{width:2rem;font-size:.82rem;flex-shrink:0;}
+.ebar-track{flex:1;height:8px;background:rgba(255,255,255,.08);}
+.ebar-fill{height:100%;}
+.ebar-cnt{width:1.8rem;font-size:.74rem;color:var(--lavender);text-align:right;}
+
+.strength-badge{display:inline-block;padding:.25rem .9rem;border-radius:20px;font-size:.78rem;font-weight:700;margin-top:.6rem;}
+.badge-strong{background:rgba(74,155,111,.2);color:#6ecfa0;border:1px solid #4a9b6f;}
+.badge-weak{background:rgba(192,122,74,.2);color:#e09060;border:1px solid #c07a4a;}
+.badge-mid{background:rgba(185,188,201,.15);color:var(--lavender);border:1px solid rgba(185,188,201,.4);}
+
+.comment-box{font-size:.88rem;line-height:2.05;color:var(--ivory);}
+.comment-box .lead{color:var(--gold-bright);font-weight:700;margin-bottom:.6rem;display:block;}
+
+.cta-card{background:linear-gradient(180deg,rgba(232,195,132,.08),rgba(0,0,0,.3));
+  border:1px solid rgba(232,195,132,.4);padding:2rem 1.4rem;border-radius:3px;text-align:center;margin-top:1.6rem;}
+.cta-card h3{font-size:1.05rem;margin-bottom:.8rem;}
+.cta-card p{font-size:.82rem;color:var(--lavender);line-height:1.85;margin-bottom:1.5rem;}
+</style>
+</head>
+<body>
+<div class="stars" id="sf"></div>
+<div class="vignette"></div>
+
+<main>
+<div class="wrap">
+
+  <div id="formArea">
+    <div class="eyebrow">Free Consultation · 無料相談</div>
+    <h1 class="page-title">あなたの運気の流れを見る</h1>
+    <p class="page-sub">
+      生年月日(お時間が分かれば尚可)を入力すると、<br>
+      その場で命式と五行バランス、簡単な解説をご覧いただけます。
+    </p>
+
+    <div class="panel">
+      <h2>生年月日を入力</h2>
+      <div class="field-row">
+        <div class="field"><label>生年(西暦)<span class="req">*</span></label><select id="f_year"></select></div>
+        <div class="field"><label>月<span class="req">*</span></label><select id="f_month"></select></div>
+        <div class="field"><label>日<span class="req">*</span></label><select id="f_day"></select></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>出生時(不明なら空欄)</label><select id="f_hour"><option value="">不明</option></select></div>
+        <div class="field"><label>分</label><select id="f_min"><option value="">--</option></select></div>
+      </div>
+      <div class="field">
+        <label>性別<span class="req">*</span></label>
+        <div class="radio-row">
+          <label><input type="radio" name="f_gender" value="male"> 男性</label>
+          <label><input type="radio" name="f_gender" value="female" checked> 女性</label>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="runDiagnosis()">無料で結果を見る</button>
+    <p class="hint">💡 出生時間が分かるとより精度の高い診断になりますが、不明でも診断可能です。</p>
+  </div>
+
+  <div id="result">
+    <div class="eyebrow">Your Result · あなたの命式</div>
+    <h1 class="page-title" id="r_title">診断結果</h1>
+
+    <div class="panel">
+      <h2>四柱(命式)</h2>
+      <div class="pillars" id="r_pillars"></div>
+    </div>
+
+    <div class="panel">
+      <h2>五行バランス</h2>
+      <div id="r_elements"></div>
+      <div id="r_strength"></div>
+    </div>
+
+    <div class="panel">
+      <h2>宗玄より、ひとこと</h2>
+      <div class="comment-box" id="r_comment"></div>
+    </div>
+
+    <div class="cta-card">
+      <h3>「いつ動くべきか」は、ここから先が本題です</h3>
+      <p>
+        ここまでは、あなたが生まれ持った運気の"大枠"です。<br>
+        本鑑定では、この命式をもとにタロットを展開し、<br>
+        <strong style="color:var(--gold-bright)">「この日に動くと良い」という具体的な吉日</strong>までお伝えします。
+      </p>
+      <a class="btn-primary" href="https://buy.stripe.com/5kQ14mcqiflQ1vUcKn93y00" target="_blank" rel="noopener">本鑑定に申し込む</a>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<script>
+// ===== 流れ星(右上45度 → 左下45度、時々赤い大きめの星) =====
+(function(){
+  const f=document.getElementById('sf');
+  const N=70;
+  for(let i=0;i<N;i++){
+    const s=document.createElement('div');
+    const isRed=Math.random()<0.07;
+    s.className='star'+(isRed?' red':'');
+    const sz=isRed?(Math.random()*2.4+3.2):(Math.random()*1.6+0.8);
+    s.style.width=sz.toFixed(2)+'px';s.style.height=sz.toFixed(2)+'px';
+    s.style.top=(Math.random()*130-15)+'%';
+    s.style.left=(Math.random()*130-15)+'%';
+    s.style.animationDuration=(Math.random()*9+7)+'s';
+    s.style.animationDelay=(Math.random()*-14)+'s';
+    f.appendChild(s);
+  }
+})();
+
+// ===== 四柱推命エンジン(既存ロジックを流用) =====
+const ST=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const BR=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const SE=[0,0,1,1,2,2,3,3,4,4];
+const BE=[4,2,0,0,2,1,1,2,3,3,2,4];
+const EL=['木','火','土','金','水'];
+const EC=['#7fa06b','#d9704f','#c99a3e','#b9bcc9','#5b93a8'];
+const ELDESC={
+  '木':'まっすぐ伸びていこうとする、成長志向の芯を持つ方',
+  '火':'情熱を灯し、周囲を明るく照らす表現力豊かな方',
+  '土':'どっしりと構え、周囲を受け止める安定感のある方',
+  '金':'物事の筋を通す、芯の強さと美意識を併せ持つ方',
+  '水':'状況に合わせて形を変えられる、柔軟な知性を持つ方'
+};
+function dr(d){return d*Math.PI/180;}
+function n3(x){return((x%360)+360)%360;}
+function cjd(Y,M,D){let y=Y,m=M;if(m<=2){y--;m+=12;}const A=Math.floor(y/100),B=2-A+Math.floor(A/4);return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+D+B-1524.5;}
+function jstjd(Y,M,D,H,Min){return cjd(Y,M,D+(H+Min/60-9)/24);}
+function sl(jd){const T=(jd-2451545)/36525,L0=n3(280.46646+36000.76983*T),M=n3(357.52911+35999.05029*T),Mr=dr(M),C=(1.914602-0.004817*T)*Math.sin(Mr)+(0.019993-0.000101*T)*Math.sin(2*Mr)+0.000289*Math.sin(3*Mr);return n3(L0+C-0.00569-0.00478*Math.sin(dr(125.04-1934.136*T)));}
+function flj(tg,g){let jd=g;for(let i=0;i<8;i++){let d=((sl(jd)-tg+180)%360+360)%360-180;jd-=d/0.9856;}return jd;}
+function gjdn(Y,M,D){const a=Math.floor((14-M)/12),y=Y+4800-a,m=M+12*a-3;return D+Math.floor((153*m+2)/5)+365*y+Math.floor(y/4)-Math.floor(y/100)+Math.floor(y/400)-32045;}
+function bazi(Y,M,D,H,Min,noT){
+  const hh=noT?12:H,mm=noT?0:Min;
+  const bjd=jstjd(Y,M,D,hh,mm),sln=sl(bjd),seq=Math.floor(n3(sln-315)/30);
+  const MB=[2,3,4,5,6,7,8,9,10,11,0,1];
+  const lc=flj(315,cjd(Y,2,4.5));
+  const ey=bjd>=lc?Y:Y-1;
+  const ysi=((ey-4)%10+10)%10,ybi=((ey-4)%12+12)%12;
+  const mbi=MB[seq],mss=(2*(ysi%5)+2)%10,msi=(mss+seq)%10;
+  let dd={Y,M,D};
+  if(!noT&&H>=23){const nd=new Date(Y,M-1,D);nd.setDate(nd.getDate()+1);dd={Y:nd.getFullYear(),M:nd.getMonth()+1,D:nd.getDate()};}
+  const jdn=gjdn(dd.Y,dd.M,dd.D),gz=(((jdn-2451551)%60)+60)%60;
+  const dsi=gz%10,dbi=gz%12;
+  let hsi=null,hbi=null;
+  if(!noT){hbi=Math.floor(((H+1)%24)/2);hsi=((2*(dsi%5))%10+hbi)%10;}
+  return{bjd,seq,ey,year:{s:ysi,b:ybi},month:{s:msi,b:mbi},day:{s:dsi,b:dbi},hour:noT?null:{s:hsi,b:hbi}};
+}
+function tally(bz){
+  const c=[0,0,0,0,0];
+  const as=(i,w)=>c[SE[i]]+=w,ab=(i,w)=>c[BE[i]]+=w;
+  as(bz.year.s,1);ab(bz.year.b,1);as(bz.month.s,1);ab(bz.month.b,2);
+  as(bz.day.s,1);ab(bz.day.b,1);if(bz.hour){as(bz.hour.s,1);ab(bz.hour.b,1);}
+  return c;
+}
+function pk(s,b){return ST[s]+BR[b];}
+function ps(si,bi){return `${si%2===0?'陽':'陰'}${EL[SE[si]]} / ${EL[BE[bi]]}`;}
+
+// ===== フォーム初期化 =====
+(function(){
+  const ys=document.getElementById('f_year'),ms=document.getElementById('f_month'),ds=document.getElementById('f_day'),hs=document.getElementById('f_hour'),mns=document.getElementById('f_min');
+  const ny=new Date().getFullYear();
+  for(let y=ny;y>=1930;y--){const o=document.createElement('option');o.value=y;o.textContent=y+'年';ys.appendChild(o);}
+  ys.value=1990;
+  for(let m=1;m<=12;m++){const o=document.createElement('option');o.value=m;o.textContent=m+'月';ms.appendChild(o);}
+  function fd(){const y=parseInt(ys.value),m=parseInt(ms.value),days=new Date(y,m,0).getDate(),cur=ds.value;ds.innerHTML='';for(let d=1;d<=days;d++){const o=document.createElement('option');o.value=d;o.textContent=d+'日';ds.appendChild(o);}if(cur&&cur<=days)ds.value=cur;}
+  ys.addEventListener('change',fd);ms.addEventListener('change',fd);fd();ds.value=15;
+  for(let h=0;h<24;h++){const o=document.createElement('option');o.value=h;o.textContent=String(h).padStart(2,'0')+'時';hs.appendChild(o);}
+  hs.value='';
+  for(let mi=0;mi<60;mi+=5){const o=document.createElement('option');o.value=mi;o.textContent=String(mi).padStart(2,'0')+'分';mns.appendChild(o);}
+  mns.value='';
+})();
+
+// ===== 診断実行 =====
+function runDiagnosis(){
+  const Y=parseInt(document.getElementById('f_year').value);
+  const M=parseInt(document.getElementById('f_month').value);
+  const D=parseInt(document.getElementById('f_day').value);
+  const hv=document.getElementById('f_hour').value;
+  const mv=document.getElementById('f_min').value;
+  const gender=document.querySelector('input[name=f_gender]:checked').value;
+  const noT=hv==='';
+  const H=noT?12:parseInt(hv),Min=noT?0:parseInt(mv||0);
+
+  const bz=bazi(Y,M,D,H,Min,noT);
+  const c=tally(bz);
+
+  const roles=['年柱','月柱','日柱','時柱'],ps2=[bz.year,bz.month,bz.day,bz.hour];
+  document.getElementById('r_pillars').innerHTML=ps2.map((p,i)=>p?
+    `<div class="pillar${i===2?' dm':''}"><div class="role">${roles[i]}</div><div class="kanji">${pk(p.s,p.b)}</div><div class="sub">${ps(p.s,p.b)}</div></div>`:
+    `<div class="pillar"><div class="role">${roles[i]}</div><div class="kanji" style="opacity:.4">―</div></div>`).join('');
+
+  const tot=c.reduce((a,b)=>a+b,0)||1;
+  document.getElementById('r_elements').innerHTML=EL.map((el,i)=>
+    `<div class="ebar-row"><div class="ebar-lbl" style="color:${EC[i]}">${el}</div>
+     <div class="ebar-track"><div class="ebar-fill" style="width:${(c[i]/tot*100).toFixed(1)}%;background:${EC[i]}"></div></div>
+     <div class="ebar-cnt">${c[i]}</div></div>`).join('');
+
+  const dm=SE[bz.day.s],dmEl=EL[dm];
+  const sup=c[dm]+c[(dm+4)%5],drn=c[(dm+1)%5]+c[(dm+2)%5]+c[(dm+3)%5];
+  const v=sup>drn?'身強寄り':sup<drn?'身弱寄り':'中庸';
+  const bc=v==='身強寄り'?'badge-strong':v==='身弱寄り'?'badge-weak':'badge-mid';
+  document.getElementById('r_strength').innerHTML=
+    `<div style="font-size:.82rem;color:var(--lavender);margin-top:.8rem;">日主: <strong style="color:var(--ivory)">${ST[bz.day.s]}(${dmEl})</strong></div>
+     <span class="strength-badge ${bc}">${v}</span>`;
+
+  // 最も多い五行/少ない五行
+  let maxI=0,minI=0;
+  for(let i=1;i<5;i++){if(c[i]>c[maxI])maxI=i;if(c[i]<c[minI])minI=i;}
+
+  const strengthText=v==='身強寄り'
+    ? '今はエネルギーが満ちており、自分から動いていくことで流れに乗りやすい時期です。'
+    : v==='身弱寄り'
+    ? '今は力を蓄え、周囲との調和やタイミングを見極めることが大切な時期です。焦らず土台を整えることが、結果的に一番の近道になります。'
+    : '心身のバランスが取れており、大きく崩れることなく物事を進めやすい時期です。';
+
+  document.getElementById('r_comment').innerHTML=
+    `<span class="lead">${ST[bz.day.s]}(${dmEl})を日主に持つあなたへ</span>
+     ${ELDESC[dmEl]}です。<br><br>
+     命式全体では「${EL[maxI]}」の気が最も強く出ており、「${EL[minI]}」の気がやや少なめの構成です。${strengthText}`;
+
+  document.getElementById('r_title').textContent=`${Y}年${M}月${D}日生まれの命式`;
+
+  document.getElementById('formArea').style.display='none';
+  document.getElementById('result').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
