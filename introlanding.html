@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>あなたが動くべき日がわかる｜五行庵 宗玄</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Shippori+Mincho+B1:wght@600;700;800&family=Shippori+Antique+B1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12112c; --gold:#cfa15c; --gold-bright:#e8c384;
+  --ivory:#f3ecdd; --lavender:#d9d0f0; --panel:#1a1840;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--ink);color:var(--ivory);font-family:'Shippori Antique B1',sans-serif;overflow-x:hidden;}
+h1,h2,h3{font-family:'Shippori Mincho B1',serif;word-break:keep-all;}
+a{color:inherit;}
+
+/* ===== 背景演出(流れ星:右上45度 → 左下45度、時々赤い大きめの星) ===== */
+.stars{position:fixed;inset:-10vh -10vw;z-index:0;pointer-events:none;overflow:hidden;}
+.star{position:absolute;border-radius:50%;background:#fff;opacity:0;animation:flow linear infinite;}
+.star.red{background:#e8735c;box-shadow:0 0 8px rgba(232,115,92,.85),0 0 18px rgba(232,115,92,.45);}
+@keyframes flow{
+  0%{transform:translate(0,0);opacity:0;}
+  8%{opacity:1;}
+  85%{opacity:1;}
+  100%{transform:translate(-150vw,150vh);opacity:0;}
+}
+.vignette{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 60% at 50% 20%,rgba(6,7,20,.1) 0%,rgba(6,7,20,.55) 60%,rgba(4,4,14,.92) 100%);}
+main{position:relative;z-index:1;}
+
+.wrap{max-width:620px;margin:0 auto;padding:0 1.4rem;}
+
+/* ===== HERO ===== */
+.hero{padding:6vh 1.4rem 5vh;text-align:center;max-width:620px;margin:0 auto;}
+.eyebrow{font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.32em;color:var(--gold-bright);text-transform:uppercase;margin-bottom:2rem;}
+
+.moon{position:relative;width:118px;height:118px;margin:0 auto 2.4rem;}
+.moon-ring{position:absolute;inset:-14px;border:1px solid rgba(232,195,132,.35);border-radius:50%;
+  transform:rotate(-18deg) scaleX(1.05);}
+.moon-body{position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 38% 34%,#fff6dd 0%,var(--gold-bright) 42%,var(--gold) 78%,#a5793a 100%);
+  box-shadow:0 0 46px rgba(232,195,132,.45),0 0 90px rgba(232,195,132,.18);}
+
+h1.headline{font-size:clamp(2rem,8vw,2.6rem);font-weight:800;line-height:1.5;margin-bottom:1.6rem;letter-spacing:.02em;}
+h1.headline .accent{color:var(--gold-bright);}
+.hero-sub{font-size:.86rem;color:var(--lavender);line-height:2;max-width:420px;margin:0 auto 2.6rem;}
+
+.btn-primary{
+  display:inline-block;width:100%;max-width:360px;padding:1.05rem 1.2rem;
+  background:linear-gradient(135deg,var(--gold),#a5793a);
+  color:#1a1206;text-decoration:none;font-family:'Cinzel',serif;font-size:.8rem;
+  letter-spacing:.14em;text-transform:uppercase;font-weight:700;border-radius:2px;
+  box-shadow:0 8px 24px rgba(207,161,92,.28);transition:opacity .2s,transform .2s;}
+.btn-primary:hover{opacity:.92;transform:translateY(-1px);}
+.btn-note{font-size:.72rem;color:var(--lavender);opacity:.7;margin-top:.9rem;}
+
+/* ===== 区切り ===== */
+.divider-orn{display:flex;align-items:center;gap:.8rem;max-width:200px;margin:4vh auto;opacity:.5;}
+.divider-orn::before,.divider-orn::after{content:'';flex:1;height:1px;background:rgba(232,195,132,.4);}
+.divider-orn span{font-size:.7rem;color:var(--gold-bright);}
+
+/* ===== 2つの視点 ===== */
+.section{padding:4vh 1.4rem;max-width:620px;margin:0 auto;}
+.section-head{text-align:center;margin-bottom:2.6rem;}
+.section-head .eyebrow{margin-bottom:.8rem;}
+.section-head h2{font-size:clamp(1.25rem,5vw,1.55rem);line-height:1.6;}
+
+.perspectives{display:flex;flex-direction:column;gap:1rem;margin-bottom:1rem;}
+.p-card{background:rgba(0,0,0,.28);border:1px solid rgba(232,195,132,.28);padding:1.7rem 1.5rem;border-radius:2px;
+  display:flex;gap:1.2rem;align-items:flex-start;}
+.p-num{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.1em;color:var(--gold-bright);
+  border:1px solid rgba(232,195,132,.4);border-radius:50%;width:34px;height:34px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;margin-top:.15rem;}
+.p-body h3{font-size:1.02rem;color:var(--gold-bright);margin-bottom:.55rem;}
+.p-body p{font-size:.84rem;color:var(--lavender);line-height:1.9;}
+
+/* ===== こんな方に ===== */
+.usecases{list-style:none;display:flex;flex-direction:column;gap:.75rem;}
+.usecases li{font-size:.86rem;color:var(--ivory);line-height:1.85;padding-left:1.5rem;position:relative;}
+.usecases li::before{content:'✦';position:absolute;left:0;color:var(--gold-bright);font-size:.75rem;top:.15rem;}
+
+/* ===== CTA カード ===== */
+.cta-card{
+  background:linear-gradient(180deg,rgba(232,195,132,.08),rgba(0,0,0,.3));
+  border:1px solid rgba(232,195,132,.4);padding:2.6rem 1.6rem;border-radius:3px;text-align:center;margin-top:1rem;}
+.tarot-icon{width:62px;height:96px;margin:0 auto 1.6rem;border:1.5px solid var(--gold-bright);border-radius:4px;
+  background:rgba(0,0,0,.25);position:relative;display:flex;align-items:center;justify-content:center;}
+.tarot-icon::before{content:'';position:absolute;inset:6px;border:1px solid rgba(232,195,132,.5);border-radius:2px;}
+.tarot-icon .glyph{width:22px;height:22px;border-radius:50%;
+  background:radial-gradient(circle at 38% 34%,#fff6dd,var(--gold-bright) 60%,var(--gold));}
+.cta-card h3{font-size:1.15rem;margin-bottom:.8rem;}
+.cta-card p{font-size:.84rem;color:var(--lavender);line-height:1.9;margin-bottom:1.8rem;}
+
+.footer-note{text-align:center;padding:5vh 1.4rem 6vh;font-size:.72rem;color:var(--lavender);opacity:.55;line-height:1.9;}
+</style>
+</head>
+<body>
+<div class="stars" id="sf"></div>
+<div class="vignette"></div>
+
+<main>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="eyebrow">Five Elements &amp; Tarot Counsel — 五行庵 宗玄</div>
+
+    <div class="moon"><div class="moon-ring"></div><div class="moon-body"></div></div>
+
+    <h1 class="headline">あなたが<br><span class="accent">動くべき日</span>が<br>わかる</h1>
+
+    <p class="hero-sub">
+      生年月日から導く運気の流れ(四柱推命)と、<br>
+      タロットが示す具体的な吉日選定。<br>
+      2つの視点から、あなたの"始め時"をお伝えします。
+    </p>
+
+    <a class="btn-primary" href="muryo-soudan.html">無料で運気を診断する</a>
+    <p class="btn-note">入力は3分程度で完了します</p>
+  </section>
+
+  <div class="divider-orn"><span>◆</span></div>
+
+  <!-- 2つの視点 -->
+  <section class="section">
+    <div class="section-head">
+      <div class="eyebrow">Two Perspectives</div>
+      <h2>2つの視点から、<br>あなたを読み解く</h2>
+    </div>
+
+    <div class="perspectives">
+      <div class="p-card">
+        <div class="p-num">01</div>
+        <div class="p-body">
+          <h3>四柱推命でベースを分析</h3>
+          <p>生まれ持った本質や、現在の大きな運気のバイオリズムを紐解きます。まずは「今が動くべきタイミングなのか」という大枠の流れを確認します。</p>
+        </div>
+      </div>
+      <div class="p-card">
+        <div class="p-num">02</div>
+        <div class="p-body">
+          <h3>タロットでピンポイントな吉日を選定</h3>
+          <p>ご希望の期間の中からタロットを展開し、「この日に動くと最もエネルギーが味方する」という具体的な日付を導き出します。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider-orn"><span>◆</span></div>
+
+  <!-- こんな方に -->
+  <section class="section">
+    <div class="section-head">
+      <div class="eyebrow">For You</div>
+      <h2>こんな方におすすめです</h2>
+    </div>
+
+    <ul class="usecases">
+      <li>新しい仕事を始めたい、起業・副業をスタートしたい日</li>
+      <li>大切な契約、面接、プレゼンを行う日</li>
+      <li>気になる人への告白、プロポーズ、入籍、同棲を始める日</li>
+      <li>習い事の開始、財布の新調、SNSアカウントの開設など</li>
+    </ul>
+  </section>
+
+  <!-- CTA -->
+  <section class="section">
+    <div class="cta-card">
+      <div class="tarot-icon"><div class="glyph"></div></div>
+      <h3>まずは無料相談から</h3>
+      <p>「この日に始めれば大丈夫」という確信と安心感を持って、あなたの未来を素晴らしい形へ動かしていきましょう。</p>
+      <a class="btn-primary" href="muryo-soudan.html">無料で運気を診断する</a>
+    </div>
+  </section>
+
+  <p class="footer-note">
+    ※ 鑑定結果は約1,000〜1,200文字を目安にお届けします<br>
+    ※ 生死・病気・ギャンブル・合否・呪い等に関する鑑定はお受けできません
+  </p>
+</main>
+
+<script>
+(function(){
+  const f=document.getElementById('sf');
+  const N=70;
+  for(let i=0;i<N;i++){
+    const s=document.createElement('div');
+    const isRed=Math.random()<0.07;
+    s.className='star'+(isRed?' red':'');
+    const sz=isRed?(Math.random()*2.4+3.2):(Math.random()*1.6+0.8);
+    s.style.width=sz.toFixed(2)+'px';s.style.height=sz.toFixed(2)+'px';
+    s.style.top=(Math.random()*130-15)+'%';
+    s.style.left=(Math.random()*130-15)+'%';
+    s.style.animationDuration=(Math.random()*9+7)+'s';
+    s.style.animationDelay=(Math.random()*-14)+'s';
+    f.appendChild(s);
+  }
+})();
+</script>
+</body>
+</html>

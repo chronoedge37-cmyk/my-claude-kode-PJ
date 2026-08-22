@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>五行鑑定システム</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Shippori+Mincho+B1:wght@600;700;800&family=Shippori+Antique+B1&display=swap" rel="stylesheet">
+<!-- EmailJS (無料・バックエンド不要) -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+:root{
+  --ink:#12112c; --gold:#cfa15c; --gold-bright:#e8c384;
+  --ivory:#f3ecdd; --lavender:#d9d0f0; --panel:#1a1840;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{ scroll-behavior:smooth; }
+body{ background:var(--ink); color:var(--ivory); font-family:'Shippori Antique B1',sans-serif; }
+h1,h2,h3{ font-family:'Shippori Mincho B1',serif; word-break:keep-all; }
+
+.stars{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.star{position:absolute;border-radius:50%;background:#fff;animation:tw ease-in-out infinite;}
+@keyframes tw{0%,100%{opacity:.45;transform:scale(.9);}50%{opacity:1;transform:scale(1.2);}}
+.vignette{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 70% at 50% 30%,rgba(6,7,20,.15) 0%,rgba(6,7,20,.6) 65%,rgba(4,4,14,.93) 100%);}
+main{position:relative;z-index:1;}
+
+.wrap{max-width:620px;margin:0 auto;padding:5vh 1.4rem 8vh;}
+.eyebrow{font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.3em;color:var(--gold-bright);text-transform:uppercase;margin-bottom:.6rem;}
+.page-title{font-size:clamp(1.4rem,4vw,1.9rem);font-weight:800;margin-bottom:.6rem;}
+.page-sub{font-size:.85rem;color:var(--lavender);line-height:1.85;margin-bottom:2.4rem;}
+
+.panel{background:rgba(0,0,0,.3);border:1px solid rgba(232,195,132,.3);padding:1.8rem 1.5rem;margin-bottom:1.4rem;border-radius:2px;}
+.panel h2{font-size:1.05rem;color:var(--gold-bright);margin-bottom:1.2rem;}
+
+.field{margin-bottom:1.2rem;}
+.field label{display:block;font-size:.7rem;letter-spacing:.08em;color:var(--gold-bright);font-family:'Cinzel',serif;margin-bottom:.4rem;}
+.field label .req{color:#e29a8a;margin-left:.2rem;}
+input[type=text],select,textarea{
+  width:100%;padding:.7rem .65rem;background:rgba(255,255,255,.05);
+  border:1px solid rgba(232,195,132,.4);color:var(--ivory);font-size:.92rem;
+  font-family:'Shippori Antique B1',sans-serif;border-radius:1px;appearance:none;}
+textarea{min-height:110px;line-height:1.75;resize:vertical;}
+select:focus,input:focus,textarea:focus{outline:none;border-color:var(--gold-bright);}
+.field-row{display:flex;gap:.7rem;}
+.field-row .field{flex:1;}
+.radio-row{display:flex;gap:1.2rem;margin-top:.3rem;}
+.radio-row label{display:flex;align-items:center;gap:.4rem;font-size:.88rem;cursor:pointer;}
+
+.btn-primary{
+  width:100%;padding:1rem;background:linear-gradient(135deg,var(--gold),#a5793a);
+  color:#1a1206;border:none;font-family:'Cinzel',serif;font-size:.8rem;
+  letter-spacing:.14em;text-transform:uppercase;font-weight:700;cursor:pointer;border-radius:1px;
+  transition:opacity .2s;}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-secondary{
+  width:100%;padding:.85rem;background:none;border:1px solid rgba(232,195,132,.45);
+  color:var(--gold-bright);font-family:'Cinzel',serif;font-size:.75rem;
+  letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:1px;margin-top:.8rem;}
+
+.notice{font-size:.78rem;color:var(--lavender);line-height:1.8;margin-top:.6rem;}
+.notice.warn{color:#e29a8a;}
+.notice.ok{color:#6ecfa0;}
+
+.pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:1rem;}
+.pillar{background:rgba(0,0,0,.3);border:1px solid rgba(232,195,132,.3);text-align:center;padding:.8rem .3rem;}
+.pillar .role{font-family:'Cinzel',serif;font-size:.55rem;letter-spacing:.1em;color:var(--gold-bright);text-transform:uppercase;margin-bottom:.4rem;}
+.pillar .kanji{font-family:'Shippori Mincho B1',serif;font-size:1.3rem;}
+.pillar .sub{font-size:.6rem;color:var(--lavender);margin-top:.3rem;}
+.pillar.dm{border-color:var(--gold-bright);}
+
+.ebar-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;}
+.ebar-lbl{width:2rem;font-size:.82rem;flex-shrink:0;}
+.ebar-track{flex:1;height:8px;background:rgba(255,255,255,.08);}
+.ebar-fill{height:100%;}
+.ebar-cnt{width:1.8rem;font-size:.74rem;color:var(--lavender);text-align:right;}
+
+.info-row{font-size:.82rem;color:var(--lavender);margin-bottom:.4rem;}
+.info-row strong{color:var(--ivory);}
+
+.strength-badge{display:inline-block;padding:.2rem .8rem;border-radius:20px;font-size:.78rem;font-weight:700;margin-top:.4rem;}
+.badge-strong{background:rgba(74,155,111,.2);color:#6ecfa0;border:1px solid #4a9b6f;}
+.badge-weak{background:rgba(192,122,74,.2);color:#e09060;border:1px solid #c07a4a;}
+.badge-mid{background:rgba(185,188,201,.15);color:var(--lavender);border:1px solid rgba(185,188,201,.4);}
+
+table.dayun-mini{width:100%;border-collapse:collapse;font-size:.78rem;}
+table.dayun-mini th{color:var(--gold-bright);font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.06em;padding:.4rem .2rem;text-align:center;border-bottom:1px solid rgba(232,195,132,.3);}
+table.dayun-mini td{text-align:center;padding:.45rem .2rem;border-bottom:1px solid rgba(255,255,255,.06);}
+table.dayun-mini td.kj{font-family:'Shippori Mincho B1',serif;font-size:.95rem;}
+table.dayun-mini tr.now{background:rgba(232,195,132,.14);}
+table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
+
+.commentary-box{background:rgba(0,0,0,.2);border:1px solid rgba(182,166,223,.35);padding:1.4rem 1.2rem;margin-bottom:1.2rem;}
+.commentary-box .lbl{font-family:'Cinzel',serif;font-size:.64rem;letter-spacing:.15em;color:var(--lavender);text-transform:uppercase;margin-bottom:.6rem;display:block;}
+.commentary-box textarea{background:rgba(255,255,255,.03);border-color:rgba(182,166,223,.3);font-size:.88rem;}
+.hint{font-size:.74rem;color:var(--lavender);opacity:.65;margin-top:.4rem;line-height:1.7;}
+
+#reportOutput{
+  background:rgba(0,0,0,.25);border:1px solid rgba(232,195,132,.3);
+  padding:1.4rem;font-size:.86rem;line-height:1.95;white-space:pre-wrap;
+  color:var(--ivory);margin-top:1rem;min-height:180px;}
+.copied-msg{color:var(--gold-bright);font-size:.78rem;margin-top:.5rem;display:none;}
+.divider{border:none;border-top:1px solid rgba(232,195,132,.2);margin:2rem 0;}
+
+/* ===== 送信中スピナー ===== */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(26,18,6,.3);
+  border-top-color:#1a1206;border-radius:50%;animation:spin .8s linear infinite;margin-right:.5rem;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ===== 完了アニメ ===== */
+.done-icon{font-size:3rem;margin-bottom:1rem;}
+@media(max-width:480px){.field-row{flex-wrap:wrap;}}
+</style>
+</head>
+<body>
+<div class="stars" id="sf"></div>
+<div class="vignette"></div>
+<main>
+
+<!-- ===================== MODE A: お客様入力フォーム ===================== -->
+<div id="modeCustomer" class="wrap" style="display:none">
+  <div class="eyebrow">Five Elements · 開始日鑑定サロン</div>
+  <h1 class="page-title">鑑定お申し込みフォーム</h1>
+  <p class="page-sub">
+    以下の項目をご自身で入力のうえ「送信する」を押してください。<br>
+    入力内容はそのまま鑑定師に自動で届きます。
+  </p>
+
+  <div class="panel">
+    <h2>① お客様情報</h2>
+    <div class="field">
+      <label>お名前(ニックネーム可)<span class="req">*必須</span></label>
+      <input type="text" id="c_name" placeholder="例：はな">
+    </div>
+    <div class="field-row">
+      <div class="field"><label>生年(西暦)<span class="req">*</span></label><select id="c_year"></select></div>
+      <div class="field"><label>月<span class="req">*</span></label><select id="c_month"></select></div>
+      <div class="field"><label>日<span class="req">*</span></label><select id="c_day"></select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>出生時(不明なら空欄)</label><select id="c_hour"><option value="">不明</option></select></div>
+      <div class="field"><label>分</label><select id="c_min"><option value="">--</option></select></div>
+    </div>
+    <div class="field">
+      <label>性別<span class="req">*</span></label>
+      <div class="radio-row">
+        <label><input type="radio" name="c_gender" value="male"> 男性</label>
+        <label><input type="radio" name="c_gender" value="female" checked> 女性</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>② 鑑定内容</h2>
+    <div class="field">
+      <label>新しく「始めたいこと」<span class="req">*</span></label>
+      <input type="text" id="c_action" placeholder="例：転職活動の開始、入籍、新しい習い事など">
+    </div>
+    <div class="field">
+      <label>いつ頃までに始めたいか<span class="req">*</span></label>
+      <input type="text" id="c_period" placeholder="例：8月中、3ヶ月以内など">
+    </div>
+  </div>
+
+  <div id="c_err" class="notice warn" style="display:none;margin-bottom:1rem;"></div>
+
+  <button class="btn-primary" id="submitBtn" onclick="submitCustomer()">
+    送信する
+  </button>
+
+  <!-- 送信完了画面 -->
+  <div id="c_done" style="display:none;margin-top:1.6rem;">
+    <div class="panel" style="text-align:center;">
+      <div class="done-icon">🌙</div>
+      <h2 style="margin-bottom:.8rem;">入力内容を確認しました</h2>
+      <p class="notice" style="text-align:center;margin-bottom:1.4rem;">
+        最後に、下のボタンから鑑定師へ送信してください。<br>
+        LINEが開きますので、<strong style="color:var(--gold-bright)">「送信」を押すだけ</strong>で完了です。
+      </p>
+
+      <a id="lineSendBtn" href="#" target="_blank" rel="noopener"
+         style="display:block;width:100%;padding:1.1rem;background:#06c755;color:#fff;
+                text-decoration:none;font-family:'Cinzel',serif;font-size:.85rem;
+                letter-spacing:.1em;font-weight:700;border-radius:4px;margin-bottom:1.2rem;
+                box-shadow:0 4px 16px rgba(6,199,85,.35);">
+        LINEで鑑定師に送信する
+      </a>
+
+      <div style="text-align:left;margin-top:1.2rem;background:rgba(0,0,0,.2);padding:1rem 1.2rem;">
+        <div class="info-row">お名前: <strong id="done_name"></strong></div>
+        <div class="info-row">生年月日: <strong id="done_birth"></strong></div>
+        <div class="info-row">始めたいこと: <strong id="done_action"></strong></div>
+        <div class="info-row">希望期間: <strong id="done_period"></strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODE B: 鑑定師専用 ===================== -->
+<div id="modeReading" class="wrap" style="display:none">
+  <div class="eyebrow">Five Elements · 鑑定師専用ページ</div>
+  <h1 class="page-title">計算結果 &amp; コメント入力</h1>
+
+  <div class="panel">
+    <h2>お客様情報</h2>
+    <div class="info-row">お名前: <strong id="r_name"></strong></div>
+    <div class="info-row">生年月日: <strong id="r_birth"></strong></div>
+    <div class="info-row">性別: <strong id="r_gender"></strong></div>
+    <div class="info-row">始めたいこと: <strong id="r_action"></strong></div>
+    <div class="info-row">希望期間: <strong id="r_period"></strong></div>
+  </div>
+
+  <div class="panel">
+    <h2>命式(自動計算)</h2>
+    <div class="pillars" id="r_pillars"></div>
+    <div id="r_elements" style="margin:1rem 0;"></div>
+    <div id="r_strength"></div>
+  </div>
+
+  <div class="panel" id="r_dayunPanel">
+    <h2>大運</h2>
+    <p class="info-row" id="r_dayunMeta"></p>
+    <table class="dayun-mini" id="r_dayunTable"></table>
+  </div>
+
+  <hr class="divider">
+  <h2 style="font-size:1.05rem;margin-bottom:1.4rem;color:var(--gold-bright);">コメントを入力してください</h2>
+
+  <div class="commentary-box">
+    <span class="lbl">① 四柱推命 — 日主・五行・運気の解説</span>
+    <textarea id="comment_shishu" placeholder="例：日主は丁(火の陰)、灯火のように静かに燃え続ける性質をお持ちです。現在の大運では…"></textarea>
+    <div class="hint">💡 命式・大運を見ながら、性格・本質・現在の運気の流れをお書きください。</div>
+  </div>
+
+  <div class="commentary-box">
+    <span class="lbl">② タロット — スプレッドと読み解き</span>
+    <textarea id="comment_tarot" placeholder="例：スリーカードスプレッドにて「星」「力」「太陽」が正位置で揃いました。…"></textarea>
+    <div class="hint">💡 展開したカード・ポジション・読み解きをお書きください。</div>
+  </div>
+
+  <div class="commentary-box">
+    <span class="lbl">③ 推奨日(ピンポイント吉日)</span>
+    <textarea id="comment_date" style="min-height:60px;" placeholder="例：2026年8月18日(火・庚申)"></textarea>
+    <div class="hint">💡 日付・干支・選定理由を簡潔にお書きください。</div>
+  </div>
+
+  <div class="commentary-box">
+    <span class="lbl">④ 総合アドバイス</span>
+    <textarea id="comment_advice" placeholder="例：この日を軸に前後3日も流れが整っています。…"></textarea>
+    <div class="hint">💡 最終アドバイス・行動の指針・注意点などをお書きください。</div>
+  </div>
+
+  <hr class="divider">
+  <h2 style="font-size:1.05rem;margin-bottom:1rem;color:var(--gold-bright);">報告書プレビュー</h2>
+  <div id="reportOutput"></div>
+  <button class="btn-primary" onclick="buildReport()" style="margin-top:1rem;">報告書を生成する</button>
+  <button class="btn-secondary" onclick="copyReport()">クリップボードにコピー</button>
+  <div class="copied-msg" id="copiedMsg">コピーしました ✓</div>
+</div>
+
+<!-- ===================== 設定ページ ===================== -->
+<div id="modeSetup" class="wrap" style="display:none">
+  <div class="eyebrow">Five Elements · 初期設定</div>
+  <h1 class="page-title">メール通知の設定</h1>
+  <p class="page-sub">
+    お客様が送信ボタンを押したとき、あなたのメールに<br>
+    「鑑定師用URL」が自動で届く仕組みです。<br>
+    <strong style="color:var(--gold-bright)">一度設定すれば変更不要です。</strong>
+  </p>
+
+  <div class="panel">
+    <h2>① EmailJS の設定値を入力</h2>
+    <p class="notice" style="margin-bottom:1.2rem;">
+      EmailJS(<a href="https://www.emailjs.com" target="_blank" style="color:var(--gold-bright)">emailjs.com</a>)に無料登録し、以下の値を取得して入力してください。<br>
+      設定方法は下の「手順」をご覧ください。
+    </p>
+    <div class="field"><label>Public Key</label><input type="text" id="s_pubkey" placeholder="例：abc123XYZ..."></div>
+    <div class="field"><label>Service ID</label><input type="text" id="s_service" placeholder="例：service_xxxxxxx"></div>
+    <div class="field"><label>Template ID</label><input type="text" id="s_template" placeholder="例：template_xxxxxxx"></div>
+    <div class="field"><label>通知先メールアドレス(あなたのアドレス)</label><input type="text" id="s_email" placeholder="例：you@example.com"></div>
+    <div class="field"><label>お客様用フォームのURL(NetlifyのURL)</label><input type="text" id="s_baseurl" placeholder="例：https://xxxxx.netlify.app/kantei-system.html"></div>
+    <button class="btn-primary" onclick="saveSetup()">設定を保存する</button>
+    <div id="s_msg" class="notice" style="margin-top:.8rem;display:none;"></div>
+  </div>
+
+  <div class="panel">
+    <h2>② EmailJS の設定手順</h2>
+    <ol style="font-size:.84rem;line-height:2.1;color:var(--lavender);padding-left:1.2rem;">
+      <li><a href="https://www.emailjs.com" target="_blank" style="color:var(--gold-bright)">emailjs.com</a> にアクセスし、無料アカウントを作成</li>
+      <li>「Email Services」→「Add New Service」でGmailなどを連携</li>
+      <li>「Email Templates」→「Create New Template」でテンプレートを作成<br>
+        <span style="font-size:.76rem;opacity:.8;">件名：【鑑定申込】{{customer_name}}様<br>
+        本文に以下をそのままコピー貼付：<br>
+        お名前：{{customer_name}}<br>
+        生年月日：{{customer_birth}}<br>
+        始めたいこと：{{customer_action}}<br>
+        希望期間：{{customer_period}}<br>
+        <br>
+        ▼ 鑑定師用URL(クリックして開く)<br>
+        {{reading_url}}<br>
+        To: {{to_email}}</span>
+      </li>
+      <li>「Account」→「General」で Public Key をコピー</li>
+      <li>上の設定欄に入力して「保存」</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ===================== ERROR ===================== -->
+<div id="modeError" class="wrap" style="display:none">
+  <h1 class="page-title" style="color:#e29a8a;">URLが正しくありません</h1>
+  <p class="notice">直接開けません。設定画面は <code>?mode=setup</code> で開けます。</p>
+</div>
+
+</main>
+<script>
+// ===== star =====
+(function(){
+  const f=document.getElementById('sf');
+  for(let i=0;i<130;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=(Math.random()*1.8+0.7).toFixed(2);
+    s.style.width=sz+'px';s.style.height=sz+'px';
+    s.style.top=(Math.random()*100)+'%';s.style.left=(Math.random()*100)+'%';
+    s.style.animationDuration=(Math.random()*4+2.5)+'s';
+    s.style.animationDelay=(Math.random()*6)+'s';
+    f.appendChild(s);
+  }
+})();
+
+// ===== 四柱推命計算 =====
+const ST=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const BR=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const SE=[0,0,1,1,2,2,3,3,4,4];
+const BE=[4,2,0,0,2,1,1,2,3,3,2,4];
+const EL=['木','火','土','金','水'];
+const EC=['#7fa06b','#d9704f','#c99a3e','#b9bcc9','#5b93a8'];
+function dr(d){return d*Math.PI/180;}
+function n3(x){return((x%360)+360)%360;}
+function cjd(Y,M,D){let y=Y,m=M;if(m<=2){y--;m+=12;}const A=Math.floor(y/100),B=2-A+Math.floor(A/4);return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+D+B-1524.5;}
+function jstjd(Y,M,D,H,Min){return cjd(Y,M,D+(H+Min/60-9)/24);}
+function sl(jd){const T=(jd-2451545)/36525,L0=n3(280.46646+36000.76983*T),M=n3(357.52911+35999.05029*T),Mr=dr(M),C=(1.914602-0.004817*T)*Math.sin(Mr)+(0.019993-0.000101*T)*Math.sin(2*Mr)+0.000289*Math.sin(3*Mr);return n3(L0+C-0.00569-0.00478*Math.sin(dr(125.04-1934.136*T)));}
+function flj(tg,g){let jd=g;for(let i=0;i<8;i++){let d=((sl(jd)-tg+180)%360+360)%360-180;jd-=d/0.9856;}return jd;}
+function gjdn(Y,M,D){const a=Math.floor((14-M)/12),y=Y+4800-a,m=M+12*a-3;return D+Math.floor((153*m+2)/5)+365*y+Math.floor(y/4)-Math.floor(y/100)+Math.floor(y/400)-32045;}
+function bazi(Y,M,D,H,Min,noT){
+  const hh=noT?12:H,mm=noT?0:Min;
+  const bjd=jstjd(Y,M,D,hh,mm),sln=sl(bjd),seq=Math.floor(n3(sln-315)/30);
+  const MB=[2,3,4,5,6,7,8,9,10,11,0,1];
+  const lc=flj(315,cjd(Y,2,4.5));
+  const ey=bjd>=lc?Y:Y-1;
+  const ysi=((ey-4)%10+10)%10,ybi=((ey-4)%12+12)%12;
+  const mbi=MB[seq],mss=(2*(ysi%5)+2)%10,msi=(mss+seq)%10;
+  let dd={Y,M,D};
+  if(!noT&&H>=23){const nd=new Date(Y,M-1,D);nd.setDate(nd.getDate()+1);dd={Y:nd.getFullYear(),M:nd.getMonth()+1,D:nd.getDate()};}
+  const jdn=gjdn(dd.Y,dd.M,dd.D),gz=(((jdn-2451551)%60)+60)%60;
+  const dsi=gz%10,dbi=gz%12;
+  let hsi=null,hbi=null;
+  if(!noT){hbi=Math.floor(((H+1)%24)/2);hsi=((2*(dsi%5))%10+hbi)%10;}
+  return{bjd,seq,ey,year:{s:ysi,b:ybi},month:{s:msi,b:mbi},day:{s:dsi,b:dbi},hour:noT?null:{s:hsi,b:hbi}};
+}
+function tally(bz){
+  const c=[0,0,0,0,0];
+  const as=(i,w)=>c[SE[i]]+=w,ab=(i,w)=>c[BE[i]]+=w;
+  as(bz.year.s,1);ab(bz.year.b,1);as(bz.month.s,1);ab(bz.month.b,2);
+  as(bz.day.s,1);ab(bz.day.b,1);if(bz.hour){as(bz.hour.s,1);ab(bz.hour.b,1);}
+  return c;
+}
+function gz60(si,bi){for(let n=0;n<60;n++)if(n%10===si&&n%12===bi)return n;return 0;}
+function dayun(bz,gender){
+  const yy=bz.year.s%2===0,fwd=(yy&&gender==='male')||(!yy&&gender==='female');
+  const base=fwd?flj(n3(315+30*(bz.seq+1)),bz.bjd+15):flj(n3(315+30*bz.seq),bz.bjd-15);
+  const diff=Math.abs(base-bz.bjd),months=Math.round(diff/3*12),sy=Math.floor(months/12),sm=months%12;
+  const mi=gz60(bz.month.s,bz.month.b);
+  const pp=[];
+  for(let k=1;k<=8;k++){const n=(((mi+(fwd?1:-1)*k)%60)+60)%60;pp.push({s:n%10,b:n%12,ay:sy+(k-1)*10,am:sm});}
+  return{fwd,sy,sm,pp};
+}
+function pk(s,b){return ST[s]+BR[b];}
+function ps(si,bi){return `${si%2===0?'陽':'陰'}${EL[SE[si]]} / ${EL[BE[bi]]}`;}
+
+// ===== URL encode/decode =====
+function enc(obj){return btoa(encodeURIComponent(JSON.stringify(obj)));}
+function dec(str){try{return JSON.parse(decodeURIComponent(atob(str)));}catch(e){return null;}}
+
+// ===== 設定の保存・読み込み =====
+function loadCfg(){try{return JSON.parse(localStorage.getItem('ej_cfg')||'{}');}catch(e){return{};}}
+function saveCfg(cfg){try{localStorage.setItem('ej_cfg',JSON.stringify(cfg));}catch(e){}}
+
+// ===== メール通知(EmailJS) =====
+function sendEmailNotify(data){
+  const cfg=loadCfg();
+  if(!cfg.pubkey||!cfg.service||!cfg.template||!cfg.email)return;
+  const params={
+    customer_name:data.name,
+    customer_birth:data.birthStr,
+    customer_action:data.action,
+    customer_period:data.period,
+    reading_url:data.readingURL,
+    to_email:cfg.email
+  };
+  try{
+    emailjs.init({publicKey:cfg.pubkey});
+    emailjs.send(cfg.service,cfg.template,params)
+      .catch(function(err){console.error('EmailJS送信失敗:',err);});
+  }catch(e){console.error('EmailJS初期化失敗:',e);}
+}
+
+// ===== MODE A: お客様フォーム =====
+function initForm(){
+  const ys=document.getElementById('c_year'),ms=document.getElementById('c_month'),ds=document.getElementById('c_day'),hs=document.getElementById('c_hour'),mns=document.getElementById('c_min');
+  const ny=new Date().getFullYear();
+  for(let y=ny;y>=1930;y--){const o=document.createElement('option');o.value=y;o.textContent=y+'年';ys.appendChild(o);}
+  ys.value=1990;
+  for(let m=1;m<=12;m++){const o=document.createElement('option');o.value=m;o.textContent=m+'月';ms.appendChild(o);}
+  function fd(){const y=parseInt(ys.value),m=parseInt(ms.value),days=new Date(y,m,0).getDate(),cur=ds.value;ds.innerHTML='';for(let d=1;d<=days;d++){const o=document.createElement('option');o.value=d;o.textContent=d+'日';ds.appendChild(o);}if(cur&&cur<=days)ds.value=cur;}
+  ys.addEventListener('change',fd);ms.addEventListener('change',fd);fd();ds.value=15;
+  for(let h=0;h<24;h++){const o=document.createElement('option');o.value=h;o.textContent=String(h).padStart(2,'0')+'時';hs.appendChild(o);}
+  hs.value='';
+  for(let mi=0;mi<60;mi+=5){const o=document.createElement('option');o.value=mi;o.textContent=String(mi).padStart(2,'0')+'分';mns.appendChild(o);}
+  mns.value='';
+}
+
+function submitCustomer(){
+  const name=document.getElementById('c_name').value.trim();
+  const Y=parseInt(document.getElementById('c_year').value);
+  const M=parseInt(document.getElementById('c_month').value);
+  const D=parseInt(document.getElementById('c_day').value);
+  const hv=document.getElementById('c_hour').value;
+  const mv=document.getElementById('c_min').value;
+  const gender=document.querySelector('input[name=c_gender]:checked').value;
+  const action=document.getElementById('c_action').value.trim();
+  const period=document.getElementById('c_period').value.trim();
+  const err=document.getElementById('c_err');
+
+  if(!name||!action||!period){
+    err.textContent='お名前・始めたいこと・希望期間は必須です。';
+    err.style.display='block';
+    return;
+  }
+  err.style.display='none';
+
+  const data={name,Y,M,D,H:hv===''?null:parseInt(hv),Min:mv===''?null:parseInt(mv),gender,action,period};
+  const encoded=enc(data);
+  const base=location.href.split('?')[0];
+  const readingURL=base+'?mode=reading&d='+encoded;
+  const birthStr=`${Y}年${M}月${D}日${hv!==''?' '+String(hv).padStart(2,'0')+':'+String(mv||0).padStart(2,'0'):'(時刻不明)'}`;
+
+  // 設定済みならメールでも鑑定師用URLを通知（LINE送信忘れ時の保険）
+  sendEmailNotify({name,birthStr,action,period,readingURL});
+
+  // LINEで送るメッセージ本文を組み立てる
+  const msg =
+    '【鑑定申込】\n'
+    + 'お名前：' + name + '\n'
+    + '生年月日：' + birthStr + '\n'
+    + '性別：' + (gender==='male'?'男性':'女性') + '\n'
+    + '始めたいこと：' + action + '\n'
+    + '希望期間：' + period + '\n\n'
+    + '▼鑑定師用\n'
+    + readingURL;
+
+  // LINEの送信リンクを生成（お客様は「送信」を押すだけ）
+  const lineUrl = 'https://line.me/R/share?text=' + encodeURIComponent(msg);
+
+  // 完了画面を表示
+  document.getElementById('done_name').textContent=name;
+  document.getElementById('done_birth').textContent=birthStr;
+  document.getElementById('done_action').textContent=action;
+  document.getElementById('done_period').textContent=period;
+  document.getElementById('c_done').style.display='block';
+  document.getElementById('submitBtn').style.display='none';
+
+  // LINE送信ボタンにリンクを設定
+  const lineBtn = document.getElementById('lineSendBtn');
+  if(lineBtn) lineBtn.href = lineUrl;
+
+  window.scrollTo({top:document.getElementById('c_done').offsetTop-40,behavior:'smooth'});
+}
+
+// ===== MODE B: 鑑定師表示 =====
+function initReading(data){
+  const noT=data.H===null;
+  document.getElementById('r_name').textContent=data.name;
+  document.getElementById('r_birth').textContent=`${data.Y}年${data.M}月${data.D}日${noT?'(時刻不明)':' '+String(data.H).padStart(2,'0')+':'+String(data.Min).padStart(2,'0')}`;
+  document.getElementById('r_gender').textContent=data.gender==='male'?'男性':'女性';
+  document.getElementById('r_action').textContent=data.action;
+  document.getElementById('r_period').textContent=data.period;
+
+  const bz=bazi(data.Y,data.M,data.D,data.H||12,data.Min||0,noT);
+  const c=tally(bz);
+
+  // pillars
+  const roles=['年柱','月柱','日柱','時柱'],ps2=[bz.year,bz.month,bz.day,bz.hour];
+  document.getElementById('r_pillars').innerHTML=ps2.map((p,i)=>p?
+    `<div class="pillar${i===2?' dm':''}"><div class="role">${roles[i]}</div><div class="kanji">${pk(p.s,p.b)}</div><div class="sub">${ps(p.s,p.b)}</div></div>`:
+    `<div class="pillar"><div class="role">${roles[i]}</div><div class="kanji" style="opacity:.4">―</div></div>`).join('');
+
+  // elements
+  const tot=c.reduce((a,b)=>a+b,0)||1;
+  document.getElementById('r_elements').innerHTML=EL.map((el,i)=>
+    `<div class="ebar-row"><div class="ebar-lbl" style="color:${EC[i]}">${el}</div>
+     <div class="ebar-track"><div class="ebar-fill" style="width:${(c[i]/tot*100).toFixed(1)}%;background:${EC[i]}"></div></div>
+     <div class="ebar-cnt">${c[i]}</div></div>`).join('');
+
+  // strength
+  const dm=SE[bz.day.s],sup=c[dm]+c[(dm+4)%5],drn=c[(dm+1)%5]+c[(dm+2)%5]+c[(dm+3)%5];
+  const v=sup>drn?'身強寄り':sup<drn?'身弱寄り':'中庸';
+  const bc=v==='身強寄り'?'badge-strong':v==='身弱寄り'?'badge-weak':'badge-mid';
+  document.getElementById('r_strength').innerHTML=
+    `<div class="info-row">日主: <strong>${ST[bz.day.s]}(${EL[dm]})</strong> &nbsp;扶助 ${sup} / 洩克 ${drn}</div><span class="strength-badge ${bc}">${v}</span>`;
+
+  // dayun
+  if(noT){document.getElementById('r_dayunPanel').style.display='none';}
+  else{
+    const dy=dayun(bz,data.gender);
+    document.getElementById('r_dayunMeta').textContent=`${dy.fwd?'順行':'逆行'} / 起運 ${dy.sy}歳${dy.sm}か月`;
+    const now=new Date().getFullYear();
+    let rows='<tr><th>期間</th><th>干支</th><th>五行</th></tr>';
+    dy.pp.forEach(p=>{
+      const ey=bz.ey+p.ay,ey2=ey+9,cur=now>=ey&&now<=ey2;
+      rows+=`<tr class="${cur?'now':''}"><td>${p.ay}〜${p.ay+9}歳<br><span style="opacity:.6;font-size:.7rem">(${ey}〜${ey2})</span></td><td class="kj">${pk(p.s,p.b)}</td><td>${ps(p.s,p.b)}</td></tr>`;
+    });
+    document.getElementById('r_dayunTable').innerHTML=rows;
+  }
+  window._rd={data,bz,c};
+}
+
+function buildReport(){
+  if(!window._rd)return;
+  const {data,bz,c}=window._rd;
+  const dm=SE[bz.day.s];
+  const lines=[
+    `━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `【鑑定報告書】 ${data.name} 様`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━`,``,
+    `■ ご希望内容：${data.action}`,
+    `■ 希望期間　：${data.period}`,``,
+    `【命式】`,
+    `年柱：${pk(bz.year.s,bz.year.b)}　月柱：${pk(bz.month.s,bz.month.b)}　日柱：${pk(bz.day.s,bz.day.b)}${bz.hour?`　時柱：${pk(bz.hour.s,bz.hour.b)}`:''}`,
+    `日主：${ST[bz.day.s]}(${EL[dm]}) / 五行：木${c[0]} 火${c[1]} 土${c[2]} 金${c[3]} 水${c[4]}`,``,
+    `───────────────────────────`,
+    `① 四柱推命より`,`───────────────────────────`,
+    document.getElementById('comment_shishu').value.trim()||'(未入力)',``,
+    `───────────────────────────`,
+    `② タロットより`,`───────────────────────────`,
+    document.getElementById('comment_tarot').value.trim()||'(未入力)',``,
+    `━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `★ 推奨日：${document.getElementById('comment_date').value.trim()||'(未入力)'}`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━`,``,
+    `───────────────────────────`,
+    `③ 総合アドバイス`,`───────────────────────────`,
+    document.getElementById('comment_advice').value.trim()||'(未入力)',``,
+    `この鑑定が、${data.name}様の新しい一歩の後押しとなりますように。`,
+    `まごころを込めて鑑定させていただきました。`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━`,
+  ];
+  const txt=lines.join('\n');
+  document.getElementById('reportOutput').textContent=txt;
+  window._rpt=txt;
+}
+function copyReport(){
+  if(!window._rpt){buildReport();}
+  try{navigator.clipboard.writeText(window._rpt);}
+  catch(e){const t=document.createElement('textarea');t.value=window._rpt;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);}
+  const m=document.getElementById('copiedMsg');m.style.display='block';setTimeout(()=>{m.style.display='none';},2200);
+}
+
+// ===== 設定ページ =====
+function initSetup(){
+  const cfg=loadCfg();
+  if(cfg.pubkey)document.getElementById('s_pubkey').value=cfg.pubkey;
+  if(cfg.service)document.getElementById('s_service').value=cfg.service;
+  if(cfg.template)document.getElementById('s_template').value=cfg.template;
+  if(cfg.email)document.getElementById('s_email').value=cfg.email;
+  if(cfg.baseurl)document.getElementById('s_baseurl').value=cfg.baseurl;
+}
+function saveSetup(){
+  const cfg={
+    pubkey:document.getElementById('s_pubkey').value.trim(),
+    service:document.getElementById('s_service').value.trim(),
+    template:document.getElementById('s_template').value.trim(),
+    email:document.getElementById('s_email').value.trim(),
+    baseurl:document.getElementById('s_baseurl').value.trim()
+  };
+  saveCfg(cfg);
+  const m=document.getElementById('s_msg');
+  m.textContent='設定を保存しました。';m.className='notice ok';m.style.display='block';
+  setTimeout(()=>{m.style.display='none';},2500);
+}
+
+// ===== ルーティング =====
+(function(){
+  const p=new URLSearchParams(location.search),mode=p.get('mode'),d=p.get('d');
+  if(!mode||mode==='customer'){
+    document.getElementById('modeCustomer').style.display='block';initForm();
+  } else if(mode==='reading'&&d){
+    const data=dec(d);
+    if(!data){document.getElementById('modeError').style.display='block';return;}
+    document.getElementById('modeReading').style.display='block';initReading(data);
+  } else if(mode==='setup'){
+    document.getElementById('modeSetup').style.display='block';initSetup();
+  } else {
+    document.getElementById('modeError').style.display='block';
+  }
+})();
+</script>
+</body>
+</html>
