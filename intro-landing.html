@@ -37,12 +37,28 @@ main{position:relative;z-index:1;}
 .hero{padding:6vh 1.4rem 5vh;text-align:center;max-width:620px;margin:0 auto;}
 .eyebrow{font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.32em;color:var(--gold-bright);text-transform:uppercase;margin-bottom:2rem;}
 
-.moon{position:relative;width:118px;height:118px;margin:0 auto 2.4rem;}
+.moon{position:relative;width:132px;height:132px;margin:0 auto 1.6rem;}
 .moon-ring{position:absolute;inset:-14px;border:1px solid rgba(232,195,132,.35);border-radius:50%;
   transform:rotate(-18deg) scaleX(1.05);}
+.moon-ring2{position:absolute;inset:-22px;border:1px solid rgba(232,195,132,.16);border-radius:50%;}
 .moon-body{position:absolute;inset:0;border-radius:50%;
   background:radial-gradient(circle at 38% 34%,#fff6dd 0%,var(--gold-bright) 42%,var(--gold) 78%,#a5793a 100%);
   box-shadow:0 0 46px rgba(232,195,132,.45),0 0 90px rgba(232,195,132,.18);}
+.portrait-img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover;
+  box-shadow:0 0 46px rgba(232,195,132,.45),0 0 90px rgba(232,195,132,.18);}
+
+.combo-row{display:flex;align-items:center;justify-content:center;gap:.7rem;margin-bottom:1.8rem;}
+.combo-item{display:flex;align-items:center;gap:.4rem;font-family:'Cinzel',serif;font-size:.62rem;
+  letter-spacing:.06em;color:var(--gold-bright);border:1px solid rgba(232,195,132,.4);
+  border-radius:20px;padding:.4rem .8rem;background:rgba(232,195,132,.06);}
+.combo-item .ico{font-size:.9rem;}
+.combo-x{color:var(--lavender);opacity:.6;font-size:.8rem;}
+
+.sougen-quote{max-width:380px;margin:0 auto 2rem;padding:1rem 1.2rem;position:relative;
+  border-left:2px solid var(--gold-bright);text-align:left;background:rgba(0,0,0,.18);}
+.sougen-quote p{font-size:.82rem;color:var(--ivory);line-height:1.85;font-style:normal;}
+.sougen-quote .who{display:block;margin-top:.5rem;font-family:'Cinzel',serif;font-size:.6rem;
+  letter-spacing:.12em;color:var(--gold-bright);text-transform:uppercase;}
 
 h1.headline{font-size:clamp(2rem,8vw,2.6rem);font-weight:800;line-height:1.5;margin-bottom:1.6rem;letter-spacing:.02em;}
 h1.headline .accent{color:var(--gold-bright);font-family:'Yuji Syuku',serif;letter-spacing:.06em;}
@@ -106,20 +122,35 @@ h1.headline .accent{color:var(--gold-bright);font-family:'Yuji Syuku',serif;lett
   <section class="hero">
     <div class="eyebrow">Five Elements &amp; Tarot Counsel — <span style="white-space:nowrap">五行庵 宗玄</span></div>
 
-    <div class="moon"><div class="moon-ring"></div><div class="moon-body"></div></div>
+    <div class="moon">
+      <div class="moon-ring"></div><div class="moon-ring2"></div><div class="moon-body"></div>
+      <img class="portrait-img" src="assets/portrait/sougen.png" alt="宗玄" onerror="this.remove()">
+    </div>
+
+    <div class="combo-row">
+      <div class="combo-item"><span class="ico">☯</span>四柱推命</div>
+      <span class="combo-x">×</span>
+      <div class="combo-item"><span class="ico">🔮</span>タロット</div>
+    </div>
 
     <h1 class="headline">あなたが<br><span class="accent">動くべき日</span>が<br>わかる</h1>
 
     <p class="hero-sub">
       これは、未来を言い当てる「予言」ではありません。<br>
-      あなたが迷ったときに開く、<span style="color:var(--gold-bright)">「行動の処方篋」</span>です。
+      あなたが迷ったときに開く、<span style="color:var(--gold-bright)">「行動の処方箋」</span>です。
     </p>
 
     <p class="hero-sub">
       生年月日から導く運気の流れ(四柱推命)と、<br>
       タロットが示す具体的な吉日選定。<br>
+      <span style="color:var(--gold-bright)">「動くべき日」</span>だけでなく<span style="color:var(--gold-bright)">「動いてはいけない日」</span>も。<br>
       2つの視点から、あなたの"始め時"をお伝えします。
     </p>
+
+    <div class="sougen-quote">
+      <p>「占いは、答えを与えるものではありません。あなたの中にすでにある答えに、そっと光を当てるものです。」</p>
+      <span class="who">— 宗玄</span>
+    </div>
 
     <a class="btn-primary" href="muryo-soudan.html">無料で運気を診断する</a>
     <p class="btn-note">入力は3分程度で完了します</p>
