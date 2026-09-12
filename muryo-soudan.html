@@ -82,9 +82,16 @@ select:focus,input:focus{outline:none;border-color:var(--gold-bright);}
 .comment-box .lead{color:var(--gold-bright);font-weight:700;margin-bottom:.6rem;display:block;}
 
 .cta-card{background:linear-gradient(180deg,rgba(232,195,132,.08),rgba(0,0,0,.3));
-  border:1px solid rgba(232,195,132,.4);padding:2rem 1.4rem;border-radius:3px;text-align:center;margin-top:1.6rem;}
-.cta-card h3{font-size:1.05rem;margin-bottom:.8rem;}
-.cta-card p{font-size:.82rem;color:var(--lavender);line-height:1.85;margin-bottom:1.5rem;}
+  border:1px solid rgba(232,195,132,.4);padding:2rem 1.4rem;border-radius:3px;text-align:center;margin-top:1.6rem;
+  overflow-wrap:break-word;word-break:normal;}
+.cta-card h3{font-size:1.05rem;margin-bottom:.8rem;overflow-wrap:break-word;}
+.cta-card p{font-size:.82rem;color:var(--lavender);line-height:1.85;margin-bottom:1.2rem;overflow-wrap:break-word;word-break:normal;}
+.cta-card p:last-of-type{margin-bottom:1.5rem;}
+.amulet-img{display:block;width:128px;max-width:60%;height:auto;margin:0 auto 1.4rem;border-radius:6px;
+  box-shadow:0 0 30px rgba(232,195,132,.35);border:1px solid rgba(232,195,132,.4);}
+.sougen-avatar{width:34px;height:34px;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:.5rem;
+  background:radial-gradient(circle at 38% 34%,#fff6dd 0%,var(--gold-bright) 42%,var(--gold) 78%,#a5793a 100%);
+  box-shadow:0 0 14px rgba(232,195,132,.4);object-fit:cover;}
 </style>
 </head>
 <body>
@@ -142,18 +149,22 @@ select:focus,input:focus{outline:none;border-color:var(--gold-bright);}
     </div>
 
     <div class="panel">
-      <h2>宗玄より、ひとこと</h2>
+      <h2><img class="sougen-avatar" src="assets/portrait/sougen.png" alt="" onerror="this.remove()">宗玄より、ひとこと</h2>
       <div class="comment-box" id="r_comment"></div>
     </div>
 
     <div class="cta-card">
+      <img class="amulet-img" id="r_amulet" alt="お守り" onerror="this.remove()">
       <h3>「いつ動くべきか」は、ここから先が本題です</h3>
-      <p style="overflow-wrap:break-word;">
+      <p>
         ここまでは、あなたが生まれ持った運気の"大枠"です。
         本鑑定では、この命式をもとにタロットを展開し、
         <strong style="color:var(--gold-bright)">「この日に動くと良い」という具体的な吉日</strong>までお伝えします。
       </p>
-      <a class="btn-primary" href="260805.html?mode=customer">本鑑定に申し込む</a>
+      <p>
+        さらに、<strong style="color:var(--gold-bright)">「動いてはいけない日」</strong>もあわせてお伝えし、避けるべきタイミングとその過ごし方まで具体的にご案内します。
+      </p>
+      <a class="btn-primary" id="ctaApply" href="260805.html?mode=customer">本鑑定に申し込む</a>
     </div>
   </div>
 
@@ -277,6 +288,13 @@ function runDiagnosis(){
   // 最も多い五行/少ない五行
   let maxI=0,minI=0;
   for(let i=1;i<5;i++){if(c[i]>c[maxI])maxI=i;if(c[i]<c[minI])minI=i;}
+
+  const amuletFile={'木':'wood','火':'fire','土':'earth','金':'metal','水':'water'}[EL[maxI]];
+  document.getElementById('r_amulet').src='assets/amulets/'+amuletFile+'.png';
+
+  const prefill={Y,M,D,H:noT?null:H,Min:noT?null:Min,gender};
+  const pf=btoa(encodeURIComponent(JSON.stringify(prefill)));
+  document.getElementById('ctaApply').href='260805.html?mode=customer&pf='+pf;
 
   const strengthText=v==='身強寄り'
     ? '今はエネルギーが満ちており、自分から動いていくことで流れに乗りやすい時期です。'
