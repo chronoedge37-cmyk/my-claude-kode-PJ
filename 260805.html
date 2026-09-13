@@ -172,11 +172,20 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
   <div id="c_done" style="display:none;margin-top:1.6rem;">
     <div class="panel" style="text-align:center;">
       <div class="done-icon">🌙</div>
-      <h2 style="margin-bottom:.8rem;">送信が完了しました</h2>
+      <h2 style="margin-bottom:.8rem;">入力内容を確認しました</h2>
       <p class="notice" style="text-align:center;margin-bottom:1.6rem;">
-        ご入力内容は鑑定師(宗玄)に自動で届いています。<br>
-        このままお支払いへお進みください。
+        あと2ステップでお申し込み完了です。<br>
+        まず①内容をLINEで送信し、その後②お支払いへお進みください。
       </p>
+
+      <p class="notice" style="text-align:left;margin-bottom:.6rem;color:var(--gold-bright);font-weight:700;">① 内容をLINEで送信(必ずお願いします)</p>
+      <a id="lineSendBtn" href="#" target="_blank" rel="noopener"
+         style="display:block;width:100%;padding:1.1rem;background:#06c755;color:#fff;
+                text-decoration:none;font-family:'Cinzel',serif;font-size:.85rem;
+                letter-spacing:.1em;font-weight:700;border-radius:4px;margin-bottom:1.6rem;
+                box-shadow:0 4px 16px rgba(6,199,85,.35);text-align:center;">
+        LINEで鑑定師に送信する
+      </a>
 
       <div style="text-align:left;margin-bottom:1.6rem;background:rgba(0,0,0,.2);padding:1rem 1.2rem;">
         <div class="info-row">お名前: <strong id="done_name"></strong></div>
@@ -185,14 +194,10 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
         <div class="info-row">希望期間: <strong id="done_period"></strong></div>
       </div>
 
+      <p class="notice" style="text-align:left;margin-bottom:.6rem;color:var(--gold-bright);font-weight:700;">② お支払いへ進む</p>
       <a class="btn-primary" id="payBtn" href="#" target="_blank" rel="noopener" style="text-decoration:none;">
         お支払いへ進む(¥2,000)
       </a>
-      <p class="notice" style="margin-top:1.2rem;">
-        <a id="lineFallback" href="#" target="_blank" rel="noopener" style="color:var(--lavender);text-decoration:underline;">
-          うまく届いていない場合は、こちらから直接LINEで送信
-        </a>
-      </p>
     </div>
   </div>
 </div>
@@ -500,7 +505,7 @@ function submitCustomer(){
     + '▼鑑定師用\n'
     + readingURL;
 
-  // LINEの送信リンク（自動通知が届かない場合の保険としてのみ使用）
+  // LINEの送信リンクを生成（お客様は「送信」を押すだけ。確実に届く主経路）
   const lineUrl = 'https://line.me/R/share?text=' + encodeURIComponent(msg);
 
   // 完了画面を表示
@@ -511,13 +516,13 @@ function submitCustomer(){
   document.getElementById('c_done').style.display='block';
   document.getElementById('submitBtn').style.display='none';
 
+  // LINE送信ボタンにリンクを設定（主経路）
+  const lineBtn = document.getElementById('lineSendBtn');
+  if(lineBtn) lineBtn.href = lineUrl;
+
   // 決済リンクに client_reference_id を付与し、氏名を再入力させずに照合できるようにする
   const payBtn = document.getElementById('payBtn');
   if(payBtn) payBtn.href = 'https://buy.stripe.com/bJecN43TM0qWa2q5hV93y02?client_reference_id=' + encodeURIComponent(name);
-
-  // LINE手動送信は保険用リンクとしてのみ残す
-  const lineFallback = document.getElementById('lineFallback');
-  if(lineFallback) lineFallback.href = lineUrl;
 
   window.scrollTo({top:document.getElementById('c_done').offsetTop-40,behavior:'smooth'});
 }
