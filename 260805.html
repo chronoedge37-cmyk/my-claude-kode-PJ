@@ -110,6 +110,40 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 /* ===== 完了アニメ ===== */
 .done-icon{font-size:3rem;margin-bottom:1rem;}
 @media(max-width:480px){.field-row{flex-wrap:wrap;}}
+
+/* ===== PDF保存用の印刷レイアウト ===== */
+.print-area{display:none;}
+@media print{
+  body *{visibility:hidden;}
+  .print-area,.print-area *{visibility:visible;}
+  .print-area{display:block;position:absolute;left:0;top:0;width:100%;}
+  @page{margin:16mm;}
+}
+.pr-page{font-family:'Shippori Antique B1',sans-serif;color:#2a1f10;background:#fff;}
+.pr-eyebrow{font-family:'Cinzel',serif;font-size:10px;letter-spacing:.3em;color:#a5793a;text-transform:uppercase;margin-bottom:6px;}
+.pr-title{font-family:'Shippori Mincho B1',serif;font-size:26px;font-weight:800;margin-bottom:4px;color:#1a1206;}
+.pr-name{font-size:14px;color:#5c4a30;margin-bottom:18px;}
+.pr-meta{font-size:12px;color:#4a3c28;line-height:1.9;margin-bottom:18px;}
+.pr-pillars-row{display:flex;align-items:center;gap:16px;margin-bottom:10px;}
+.pr-pillars{display:flex;gap:8px;flex:1;}
+.pr-pillar{border:1px solid #cfa15c;text-align:center;padding:8px 10px;font-size:10px;color:#8a6d3e;border-radius:2px;}
+.pr-pillar span{display:block;font-family:'Shippori Mincho B1',serif;font-size:18px;color:#1a1206;margin-top:4px;}
+.pr-amulet{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid #cfa15c;flex-shrink:0;}
+.pr-elements{font-size:11px;color:#5c4a30;margin-bottom:22px;}
+.pr-section{margin-bottom:18px;}
+.pr-section h2{font-family:'Shippori Mincho B1',serif;font-size:14px;color:#a5793a;border-bottom:1px solid #e8d9b8;padding-bottom:4px;margin-bottom:8px;}
+.pr-section p{font-size:12.5px;line-height:1.9;color:#2a1f10;}
+.pr-day{border:1px solid #e8d9b8;border-radius:3px;padding:10px 14px;margin-bottom:10px;}
+.pr-day-label{font-family:'Cinzel',serif;font-size:10px;letter-spacing:.08em;color:#8a6d3e;}
+.pr-day-date{font-family:'Shippori Mincho B1',serif;font-size:15px;margin:4px 0 6px;color:#1a1206;}
+.pr-day p{font-size:12px;line-height:1.85;color:#2a1f10;}
+.pr-day-top{background:#fbf3e2;border-color:#cfa15c;border-width:2px;}
+.pr-day-top .pr-day-label{color:#a5793a;font-weight:700;}
+.pr-day-top .pr-day-date{color:#8a5a1c;font-size:17px;}
+.pr-day-avoid{background:#fdf0ee;border-color:#d98e7f;}
+.pr-day-avoid .pr-day-label{color:#b0503c;font-weight:700;}
+.pr-closing{font-size:12px;color:#5c4a30;line-height:1.9;margin-top:16px;text-align:center;}
+.pr-brand{font-family:'Cinzel',serif;font-size:10px;letter-spacing:.2em;color:#a5793a;text-align:center;margin-top:8px;text-transform:uppercase;}
 </style>
 </head>
 <body>
@@ -279,8 +313,12 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
   <div id="reportOutput"></div>
   <button class="btn-primary" onclick="buildReport()" style="margin-top:1rem;">報告書を生成する</button>
   <button class="btn-secondary" onclick="copyReport()">クリップボードにコピー</button>
+  <button class="btn-secondary" onclick="exportPDF()">PDFで保存</button>
   <div class="copied-msg" id="copiedMsg">コピーしました ✓</div>
 </div>
+
+<!-- ===================== 印刷用(PDF保存用)レイアウト ===================== -->
+<div class="print-area" id="printArea"></div>
 
 <!-- ===================== 設定ページ ===================== -->
 <div id="modeSetup" class="wrap" style="display:none">
@@ -622,6 +660,97 @@ function copyReport(){
   try{navigator.clipboard.writeText(window._rpt);}
   catch(e){const t=document.createElement('textarea');t.value=window._rpt;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);}
   const m=document.getElementById('copiedMsg');m.style.display='block';setTimeout(()=>{m.style.display='none';},2200);
+}
+
+function escHtml(s){
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ===== PDF保存(ブラウザ印刷を利用) =====
+function exportPDF(){
+  if(!window._rd)return;
+  const {data,bz,c}=window._rd;
+  const dm=SE[bz.day.s];
+  let maxI=0;for(let i=1;i<5;i++){if(c[i]>c[maxI])maxI=i;}
+  const amuletFile={'木':'wood','火':'fire','土':'earth','金':'metal','水':'water'}[EL[maxI]];
+
+  const shishu=escHtml(document.getElementById('comment_shishu').value.trim()||'(未入力)').replace(/\n/g,'<br>');
+  const tarot=escHtml(document.getElementById('comment_tarot').value.trim()||'(未入力)').replace(/\n/g,'<br>');
+  const d1=escHtml(document.getElementById('comment_date1').value.trim()||'(未入力)');
+  const d1w=escHtml(document.getElementById('comment_date1_why').value.trim()||'(未入力)').replace(/\n/g,'<br>');
+  const d2=escHtml(document.getElementById('comment_date2').value.trim()||'(未入力)');
+  const d2w=escHtml(document.getElementById('comment_date2_why').value.trim()||'(未入力)').replace(/\n/g,'<br>');
+  const d3=escHtml(document.getElementById('comment_date3').value.trim()||'(未入力)');
+  const d3w=escHtml(document.getElementById('comment_date3_why').value.trim()||'(未入力)').replace(/\n/g,'<br>');
+  const ad=escHtml(document.getElementById('comment_avoid_date').value.trim()||'(未入力)');
+  const adw=escHtml(document.getElementById('comment_avoid_why').value.trim()||'(未入力)').replace(/\n/g,'<br>');
+  const advice=escHtml(document.getElementById('comment_advice').value.trim()||'(未入力)').replace(/\n/g,'<br>');
+
+  document.getElementById('printArea').innerHTML=`
+    <div class="pr-page">
+      <div class="pr-eyebrow">Five Elements &amp; Tarot Counsel</div>
+      <h1 class="pr-title">鑑定報告書</h1>
+      <div class="pr-name">${escHtml(data.name)} 様</div>
+
+      <div class="pr-meta">
+        <div>ご希望内容：${escHtml(data.action)}</div>
+        <div>希望期間：${escHtml(data.period)}</div>
+      </div>
+
+      <div class="pr-pillars-row">
+        <div class="pr-pillars">
+          <div class="pr-pillar">年柱<span>${pk(bz.year.s,bz.year.b)}</span></div>
+          <div class="pr-pillar">月柱<span>${pk(bz.month.s,bz.month.b)}</span></div>
+          <div class="pr-pillar">日柱<span>${pk(bz.day.s,bz.day.b)}</span></div>
+          ${bz.hour?`<div class="pr-pillar">時柱<span>${pk(bz.hour.s,bz.hour.b)}</span></div>`:''}
+        </div>
+        <img class="pr-amulet" src="assets/amulets/${amuletFile}.png" alt="" onerror="this.remove()">
+      </div>
+      <div class="pr-elements">日主：${ST[bz.day.s]}(${EL[dm]}) ／ 五行：木${c[0]} 火${c[1]} 土${c[2]} 金${c[3]} 水${c[4]}</div>
+
+      <div class="pr-section">
+        <h2>① 四柱推命より</h2>
+        <p>${shishu}</p>
+      </div>
+      <div class="pr-section">
+        <h2>② タロットより</h2>
+        <p>${tarot}</p>
+      </div>
+
+      <div class="pr-day pr-day-top">
+        <span class="pr-day-label">🌟 最もおすすめの日</span>
+        <div class="pr-day-date">${d1}</div>
+        <p>${d1w}</p>
+      </div>
+      <div class="pr-day">
+        <span class="pr-day-label">● 次におすすめの日</span>
+        <div class="pr-day-date">${d2}</div>
+        <p>${d2w}</p>
+      </div>
+      <div class="pr-day">
+        <span class="pr-day-label">● もう一つの候補日</span>
+        <div class="pr-day-date">${d3}</div>
+        <p>${d3w}</p>
+      </div>
+      <div class="pr-day pr-day-avoid">
+        <span class="pr-day-label">⚠️ 動いてはいけない日</span>
+        <div class="pr-day-date">${ad}</div>
+        <p>${adw}</p>
+      </div>
+
+      <div class="pr-section">
+        <h2>総合アドバイス</h2>
+        <p>${advice}</p>
+      </div>
+
+      <div class="pr-closing">
+        この鑑定が、${escHtml(data.name)}様の新しい一歩の後押しとなりますように。<br>
+        まごころを込めて鑑定させていただきました。
+      </div>
+      <div class="pr-brand">五行庵 宗玄</div>
+    </div>
+  `;
+  window.print();
 }
 
 // ===== 設定ページ =====
