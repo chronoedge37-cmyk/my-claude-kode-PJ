@@ -38,6 +38,17 @@ main{position:relative;z-index:1;}
 .eyebrow{font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.32em;color:var(--gold-bright);text-transform:uppercase;margin-bottom:2rem;}
 
 .moon{position:relative;width:132px;height:132px;margin:0 auto 1.6rem;}
+
+/* 背景演出: 光の筋が回転しながら伸び縮みする */
+.rays{position:absolute;inset:-92px;pointer-events:none;animation:rays-spin 70s linear infinite;}
+.rays-inner{position:absolute;inset:0;animation:rays-breathe 6.5s ease-in-out infinite;}
+.ray{position:absolute;top:50%;left:50%;width:2px;
+  background:linear-gradient(to top,transparent,rgba(232,195,132,.55));
+  transform-origin:50% 100%;}
+.ray.accent{background:linear-gradient(to top,transparent,rgba(232,115,92,.6));}
+@keyframes rays-spin{to{transform:rotate(360deg);}}
+@keyframes rays-breathe{0%,100%{opacity:.6;transform:scale(1);}50%{opacity:1;transform:scale(1.1);}}
+
 .moon-ring{position:absolute;inset:-14px;border:1px solid rgba(232,195,132,.35);border-radius:50%;
   transform:rotate(-18deg) scaleX(1.05);}
 .moon-ring2{position:absolute;inset:-22px;border:1px solid rgba(232,195,132,.16);border-radius:50%;}
@@ -123,6 +134,7 @@ h1.headline .accent{color:var(--gold-bright);font-family:'Yuji Syuku',serif;lett
     <div class="eyebrow">Five Elements &amp; Tarot Counsel — <span style="white-space:nowrap">五行庵 宗玄</span></div>
 
     <div class="moon">
+      <div class="rays"><div class="rays-inner" id="rays"></div></div>
       <div class="moon-ring"></div><div class="moon-ring2"></div><div class="moon-body"></div>
       <img class="portrait-img" src="assets/portrait/sougen.png" alt="宗玄" onerror="this.remove()">
     </div>
@@ -217,6 +229,19 @@ h1.headline .accent{color:var(--gold-bright);font-family:'Yuji Syuku',serif;lett
 </main>
 
 <script>
+(function(){
+  const rays=document.getElementById('rays');
+  const N=28;
+  for(let i=0;i<N;i++){
+    const r=document.createElement('div');
+    const isAccent=i===9;
+    r.className='ray'+(isAccent?' accent':'');
+    const len=(i%2===0?58:36)+Math.random()*16;
+    r.style.height=len.toFixed(0)+'px';
+    r.style.transform='translate(-50%,-100%) rotate('+(360/N*i)+'deg)';
+    rays.appendChild(r);
+  }
+})();
 (function(){
   const f=document.getElementById('sf');
   const N=70;
