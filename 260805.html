@@ -226,6 +226,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 
   <hr class="divider">
   <h2 style="font-size:1.05rem;margin-bottom:1.4rem;color:var(--gold-bright);">コメントを入力してください</h2>
+  <p class="hint" style="margin-bottom:1.4rem;">💡 テキストが多くなりがちなので、LINEで送る際は実際のタロット展開の写真やお守り画像も一緒に添付してください。下の報告書プレビューには、その挿入位置に目印を入れています。</p>
 
   <div class="commentary-box">
     <span class="lbl">① 四柱推命 — 日主・五行・運気の解説</span>
@@ -259,13 +260,13 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
     <span class="lbl" style="color:#e29a8a;">⑤ 動いてはいけない日</span>
     <textarea id="comment_avoid_date" style="min-height:44px;" placeholder="避けるべき日付"></textarea>
     <textarea id="comment_avoid_why" style="min-height:90px;margin-top:.6rem;" placeholder="なぜ避けるべきか、その日はどう過ごすとよいか"></textarea>
-    <div class="hint">💡 理由と、その日の具体的な過ごし方(無理に動かず様子を見る、等)を必ず書いてください。</div>
+    <div class="hint">💡 「必要であれば」「できれば」等の曖昧な表現は使わず、断定的に書いてください。有料鑑定として、避けるべき理由とその日の過ごし方を明確に指示してください。</div>
   </div>
 
   <div class="commentary-box">
     <span class="lbl">⑥ 総合アドバイス</span>
     <textarea id="comment_advice" placeholder="例：この日を軸に前後3日も流れが整っています。…"></textarea>
-    <div class="hint">💡 最終アドバイス・行動の指針・注意点などをお書きください。</div>
+    <div class="hint">💡 誰にでも当てはまる一般論で締めないでください。「この日主・命式だからこそ」「この時期だからこそ」「この相談内容だからこそ」と言える、この方だけの結論を書いてください。推奨日と同じくらいの重みを持たせてください。</div>
   </div>
 
   <hr class="divider">
@@ -582,12 +583,14 @@ function buildReport(){
     `【命式】`,
     `年柱：${pk(bz.year.s,bz.year.b)}　月柱：${pk(bz.month.s,bz.month.b)}　日柱：${pk(bz.day.s,bz.day.b)}${bz.hour?`　時柱：${pk(bz.hour.s,bz.hour.b)}`:''}`,
     `日主：${ST[bz.day.s]}(${EL[dm]}) / 五行：木${c[0]} 火${c[1]} 土${c[2]} 金${c[3]} 水${c[4]}`,``,
+    `[🖼 ここに命式に対応するお守り画像を添付]`,``,
     `───────────────────────────`,
     `① 四柱推命より`,`───────────────────────────`,
     document.getElementById('comment_shishu').value.trim()||'(未入力)',``,
     `───────────────────────────`,
     `② タロットより`,`───────────────────────────`,
     document.getElementById('comment_tarot').value.trim()||'(未入力)',``,
+    `[📷 ここに実際のタロット展開の写真を添付]`,``,
     `★★★━━━━━━━━━━━━━━━━━━━━★★★`,
     `🌟 最もおすすめの日 🌟　${document.getElementById('comment_date1').value.trim()||'(未入力)'}`,
     `★★★━━━━━━━━━━━━━━━━━━━━★★★`,
