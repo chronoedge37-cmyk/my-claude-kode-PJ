@@ -208,11 +208,12 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
       <div class="done-icon">🌙</div>
       <h2 style="margin-bottom:.8rem;">入力内容を確認しました</h2>
       <p class="notice" style="text-align:center;margin-bottom:1.6rem;">
-        あと2ステップでお申し込み完了です。<br>
-        まず①内容をLINEで送信し、その後②お支払いへお進みください。
+        ご入力と同時にLINEの送信画面が自動で開きます。<br>
+        表示された宛先（宗玄）を確認し、LINEアプリ側で「送信」をタップしてください。<br>
+        その後、下の②お支払いへお進みください。
       </p>
 
-      <p class="notice" style="text-align:left;margin-bottom:.6rem;color:var(--gold-bright);font-weight:700;">① 内容をLINEで送信(必ずお願いします)</p>
+      <p class="notice" style="text-align:left;margin-bottom:.6rem;color:var(--gold-bright);font-weight:700;">① LINEの送信画面が開かない場合</p>
       <a id="lineSendBtn" href="#" target="_blank" rel="noopener"
          style="display:block;width:100%;padding:1.1rem;background:#06c755;color:#fff;
                 text-decoration:none;font-family:'Cinzel',serif;font-size:.85rem;
@@ -441,8 +442,22 @@ function pk(s,b){return ST[s]+BR[b];}
 function ps(si,bi){return `${si%2===0?'陽':'陰'}${EL[SE[si]]} / ${EL[BE[bi]]}`;}
 
 // ===== URL encode/decode =====
-function enc(obj){return btoa(encodeURIComponent(JSON.stringify(obj)));}
-function dec(str){try{return JSON.parse(decodeURIComponent(atob(str)));}catch(e){return null;}}
+// 日本語をUTF-8バイト列のままbase64化する（旧方式はencodeURIComponent経由でパーセントエンコードしてからbase64化していたため、
+// 日本語1文字が9文字前後に膨れ上がりLINE共有リンクが長くなりすぎる原因になっていた）
+function enc(obj){
+  const bytes=new TextEncoder().encode(JSON.stringify(obj));
+  let bin='';for(let i=0;i<bytes.length;i++)bin+=String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function dec(str){
+  try{
+    const bin=atob(str);
+    const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }catch(e){}
+  try{return JSON.parse(decodeURIComponent(atob(str)));}catch(e){return null;} // 旧方式で発行済みのURL用フォールバック
+}
 
 // ===== 無料診断からの生年月日引き継ぎ =====
 function applyPrefill(){
@@ -526,25 +541,26 @@ function submitCustomer(){
   const data={name,Y,M,D,H:hv===''?null:parseInt(hv),Min:mv===''?null:parseInt(mv),gender,action,period};
   const encoded=enc(data);
   const base=location.href.split('?')[0];
-  const readingURL=base+'?mode=reading&d='+encoded;
+  const readingURL=base+'?mode=reading&d='+encodeURIComponent(encoded);
   const birthStr=`${Y}年${M}月${D}日${hv!==''?' '+String(hv).padStart(2,'0')+':'+String(mv||0).padStart(2,'0'):'(時刻不明)'}`;
 
   // 設定済みならメールでも鑑定師用URLを通知（LINE送信忘れ時の保険）
   sendEmailNotify({name,birthStr,action,period,readingURL});
 
-  // LINEで送るメッセージ本文を組み立てる
+  // LINEで送るメッセージ本文を組み立てる（長文はLINEの共有リンクが長くなりすぎないよう要約し、全文は鑑定師用リンク先で確認できる）
+  const trunc=(s,n)=>s.length>n?s.slice(0,n)+'…(全文はリンク先参照)':s;
   const msg =
     '【鑑定申込】\n'
     + 'お名前：' + name + '\n'
     + '生年月日：' + birthStr + '\n'
     + '性別：' + (gender==='male'?'男性':'女性') + '\n'
-    + '始めたいこと：' + action + '\n'
-    + '希望期間：' + period + '\n\n'
+    + '始めたいこと：' + trunc(action,60) + '\n'
+    + '希望期間：' + trunc(period,40) + '\n\n'
     + '▼鑑定師用\n'
     + readingURL;
 
-  // LINEの送信リンクを生成（お客様は「送信」を押すだけ。確実に届く主経路）
-  const lineUrl = 'https://line.me/R/share?text=' + encodeURIComponent(msg);
+  // LINEの送信リンクを生成（宛先選択画面にテキストが入った状態で開く正しい形式）
+  const lineUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent(msg);
 
   // 完了画面を表示
   document.getElementById('done_name').textContent=name;
@@ -554,9 +570,12 @@ function submitCustomer(){
   document.getElementById('c_done').style.display='block';
   document.getElementById('submitBtn').style.display='none';
 
-  // LINE送信ボタンにリンクを設定（主経路）
+  // LINE送信ボタンのリンクも合わせて更新（自動で開かなかった時の保険）
   const lineBtn = document.getElementById('lineSendBtn');
   if(lineBtn) lineBtn.href = lineUrl;
+
+  // クリック（ユーザー操作）直後に自動でLINEの送信画面を開く。ボタンを別途押させない。
+  window.open(lineUrl, '_blank', 'noopener');
 
   // 決済リンクに client_reference_id を付与し、氏名を再入力させずに照合できるようにする
   const payBtn = document.getElementById('payBtn');

@@ -294,7 +294,7 @@ function runDiagnosis(){
 
   const prefill={Y,M,D,H:noT?null:H,Min:noT?null:Min,gender};
   const pf=btoa(encodeURIComponent(JSON.stringify(prefill)));
-  document.getElementById('ctaApply').href='260805.html?mode=customer&pf='+pf;
+  document.getElementById('ctaApply').href='260805.html?mode=customer&pf='+encodeURIComponent(pf);
 
   const strengthText=v==='身強寄り'
     ? '今はエネルギーが満ちており、自分から動いていくことで流れに乗りやすい時期です。'
