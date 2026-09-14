@@ -559,8 +559,7 @@ function initForm(){
 
 // 追加鑑定(+¥500)の選択肢。表示名と、報告書・お客様情報パネルで使うラベルをここで一元管理する。
 const ADDON_LABELS = {renai:'恋愛について', aisho:'相性について', shoubu:'勝負運について'};
-// TODO: 本番稼働前に実際の+¥500用Stripe Payment Linkに差し替えること(現在は仮リンク)
-const STRIPE_ADDON_URL = 'https://buy.stripe.com/PLACEHOLDER_ADDON_500';
+const STRIPE_ADDON_URL = 'https://buy.stripe.com/fZu28q9e6ddI7UieSv93y03';
 
 function submitCustomer(){
   const name=document.getElementById('c_name').value.trim();
