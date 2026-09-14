@@ -203,6 +203,24 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
     </div>
   </div>
 
+  <div class="panel">
+    <h2>③ 追加鑑定(任意・1件+¥500)</h2>
+    <p class="notice" style="margin-top:0;margin-bottom:1rem;">
+      「動くべき日」の鑑定とあわせて、同じ四柱推命×タロットの方法で他のテーマも占えます。気になるものがあればチェックしてください(いくつでも追加可能です)。
+    </p>
+    <div class="field">
+      <div class="radio-row" style="flex-direction:column;align-items:flex-start;gap:.7rem;">
+        <label><input type="checkbox" name="c_addon" value="renai"> 恋愛について(+¥500)</label>
+        <label><input type="checkbox" name="c_addon" value="aisho"> 相性について(+¥500)</label>
+        <label><input type="checkbox" name="c_addon" value="shoubu"> 勝負運について(+¥500)</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>その他知りたいこと(任意・具体的に)</label>
+      <textarea id="c_addon_other" placeholder="例：新しく始める副業がうまくいくか知りたい"></textarea>
+    </div>
+  </div>
+
   <div id="c_err" class="notice warn" style="display:none;margin-bottom:1rem;"></div>
 
   <button class="btn-primary" id="submitBtn" onclick="submitCustomer()">
@@ -234,10 +252,15 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
         <div class="info-row">希望期間: <strong id="done_period"></strong></div>
       </div>
 
-      <p class="notice" style="text-align:left;margin-bottom:.6rem;color:var(--gold-bright);font-weight:700;">② お支払いへ進む</p>
+      <p class="notice" style="text-align:left;margin-bottom:.6rem;color:var(--gold-bright);font-weight:700;">② お支払いへ進む(日付の鑑定・¥2,000)</p>
       <a class="btn-primary" id="payBtn" href="#" target="_blank" rel="noopener" style="text-decoration:none;">
         お支払いへ進む(¥2,000)
       </a>
+
+      <div id="addonPayArea" style="display:none;margin-top:1.6rem;">
+        <p class="notice" style="text-align:left;margin-bottom:.6rem;color:var(--gold-bright);font-weight:700;">③ 追加鑑定のお支払い(1件+¥500)</p>
+        <div id="addonPayButtons"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -255,6 +278,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
     <div class="info-row">始めたいこと: <strong id="r_action"></strong></div>
     <div class="info-row">希望期間: <strong id="r_period"></strong></div>
     <div class="info-row" id="r_detailRow" style="display:none;">今の状況・気になっていること: <strong id="r_detail"></strong></div>
+    <div class="info-row" id="r_addonsRow" style="display:none;color:var(--gold-bright);">追加鑑定の希望(+¥500/件): <strong id="r_addons"></strong></div>
   </div>
 
   <div class="panel">
@@ -315,6 +339,8 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
     <div class="hint">💡 誰にでも当てはまる一般論で締めないでください。「この日主・命式だからこそ」「この時期だからこそ」「この相談内容だからこそ」と言える、この方だけの結論を書いてください。推奨日と同じくらいの重みを持たせてください。</div>
   </div>
 
+  <div id="addonCommentaryArea"></div>
+
   <hr class="divider">
   <h2 style="font-size:1.05rem;margin-bottom:1rem;color:var(--gold-bright);">報告書プレビュー</h2>
   <div id="reportOutput"></div>
@@ -365,6 +391,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
         始めたいこと：{{customer_action}}<br>
         希望期間：{{customer_period}}<br>
         今の状況：{{customer_detail}}<br>
+        追加鑑定希望：{{customer_addons}}<br>
         <br>
         ▼ 鑑定師用URL(クリックして開く)<br>
         {{reading_url}}<br>
@@ -504,6 +531,7 @@ function sendEmailNotify(data){
     customer_action:data.action,
     customer_period:data.period,
     customer_detail:data.detail||'',
+    customer_addons:data.addons||'',
     reading_url:data.readingURL,
     to_email:cfg.email
   };
@@ -529,6 +557,11 @@ function initForm(){
   mns.value='';
 }
 
+// 追加鑑定(+¥500)の選択肢。表示名と、報告書・お客様情報パネルで使うラベルをここで一元管理する。
+const ADDON_LABELS = {renai:'恋愛について', aisho:'相性について', shoubu:'勝負運について'};
+// TODO: 本番稼働前に実際の+¥500用Stripe Payment Linkに差し替えること(現在は仮リンク)
+const STRIPE_ADDON_URL = 'https://buy.stripe.com/PLACEHOLDER_ADDON_500';
+
 function submitCustomer(){
   const name=document.getElementById('c_name').value.trim();
   const Y=parseInt(document.getElementById('c_year').value);
@@ -540,6 +573,8 @@ function submitCustomer(){
   const action=document.getElementById('c_action').value.trim();
   const period=document.getElementById('c_period').value.trim();
   const detail=document.getElementById('c_detail').value.trim();
+  const addons=Array.from(document.querySelectorAll('input[name=c_addon]:checked')).map(el=>el.value);
+  const addonOther=document.getElementById('c_addon_other').value.trim();
   const err=document.getElementById('c_err');
 
   if(!name||!action||!period){
@@ -549,11 +584,12 @@ function submitCustomer(){
   }
   err.style.display='none';
 
-  const data={name,Y,M,D,H:hv===''?null:parseInt(hv),Min:mv===''?null:parseInt(mv),gender,action,period,detail};
+  const data={name,Y,M,D,H:hv===''?null:parseInt(hv),Min:mv===''?null:parseInt(mv),gender,action,period,detail,addons,addonOther};
   const encoded=enc(data);
   const base=location.href.split('?')[0];
   const readingURL=base+'?mode=reading&d='+encodeURIComponent(encoded);
   const birthStr=`${Y}年${M}月${D}日${hv!==''?' '+String(hv).padStart(2,'0')+':'+String(mv||0).padStart(2,'0'):'(時刻不明)'}`;
+  const addonLabels=addons.map(k=>ADDON_LABELS[k]).concat(addonOther?[addonOther]:[]);
 
   // LINEで送るメッセージ本文を組み立てる（長文はLINEの共有リンクが長くなりすぎないよう要約し、全文は鑑定師用リンク先で確認できる）
   const trunc=(s,n)=>s.length>n?s.slice(0,n)+'…(全文はリンク先参照)':s;
@@ -563,8 +599,9 @@ function submitCustomer(){
     + '生年月日：' + birthStr + '\n'
     + '性別：' + (gender==='male'?'男性':'女性') + '\n'
     + '始めたいこと：' + trunc(action,60) + '\n'
-    + '希望期間：' + trunc(period,40) + '\n\n'
-    + '▼鑑定師用\n'
+    + '希望期間：' + trunc(period,40) + '\n'
+    + (addonLabels.length?'追加鑑定希望：'+addonLabels.join('、')+'\n':'')
+    + '\n▼鑑定師用\n'
     + readingURL;
 
   // LINEの送信リンクを生成（宛先選択画面にテキストが入った状態で開く正しい形式）
@@ -586,12 +623,30 @@ function submitCustomer(){
   const payBtn = document.getElementById('payBtn');
   if(payBtn) payBtn.href = 'https://buy.stripe.com/bJecN43TM0qWa2q5hV93y02?client_reference_id=' + encodeURIComponent(name);
 
+  // 追加鑑定が選択されていれば、1件につき+¥500の決済ボタンをその数だけ表示する
+  // (Stripeの単一Payment Linkでは複数の異なるテーマをまとめて決済できないため、件数分ボタンを並べる方式にしている)
+  if(addonLabels.length){
+    const area=document.getElementById('addonPayArea');
+    const btnArea=document.getElementById('addonPayButtons');
+    btnArea.innerHTML='';
+    addonLabels.forEach(label=>{
+      const a=document.createElement('a');
+      a.className='btn-primary';
+      a.href=STRIPE_ADDON_URL+'?client_reference_id='+encodeURIComponent(name+'/'+label);
+      a.target='_blank';a.rel='noopener';
+      a.style.textDecoration='none';a.style.display='block';a.style.marginBottom='.8rem';
+      a.textContent=label+' のお支払い(+¥500)';
+      btnArea.appendChild(a);
+    });
+    area.style.display='block';
+  }
+
   // メール自動通知の成否をお客様に正直に伝える。
   // 「LINEを押せば自動で届く」という誤解を避けるため、LINEは常に「お客様自身がタップして送る」ものとして案内し、
   // 自動通知(EmailJS)が実際に成功したかどうかで、その要否のトーンだけを変える。
   const statusEl = document.getElementById('notifyStatus');
   const lineLabelEl = document.getElementById('lineStepLabel');
-  sendEmailNotify({name,birthStr,action,period,detail,readingURL}).then(function(){
+  sendEmailNotify({name,birthStr,action,period,detail,addons:addonLabels.join('、'),readingURL}).then(function(){
     statusEl.innerHTML = '✓ 鑑定師のメールに自動で届きました。';
     statusEl.classList.add('ok');
     lineLabelEl.textContent = '① LINEでも送る(任意・お守り確認などにご利用ください)';
@@ -615,6 +670,24 @@ function initReading(data){
   if(data.detail){
     document.getElementById('r_detail').textContent=data.detail;
     document.getElementById('r_detailRow').style.display='block';
+  }
+
+  // 追加鑑定(+¥500/件)：希望テーマ名を表示し、テーマごとにコメント欄を1つずつ動的に追加する
+  const addonLabels=(data.addons||[]).map(k=>ADDON_LABELS[k]||k).concat(data.addonOther?[data.addonOther]:[]);
+  if(addonLabels.length){
+    document.getElementById('r_addons').textContent=addonLabels.join('、');
+    document.getElementById('r_addonsRow').style.display='block';
+    const area=document.getElementById('addonCommentaryArea');
+    addonLabels.forEach((label,i)=>{
+      const box=document.createElement('div');
+      box.className='commentary-box';
+      box.style.borderColor='rgba(232,195,132,.55)';box.style.background='rgba(232,195,132,.06)';
+      box.innerHTML=
+        `<span class="lbl" style="color:var(--gold-bright);">追加鑑定：${label}</span>`+
+        `<textarea id="comment_addon_${i}" placeholder="日付の鑑定と同じく、四柱推命とタロットを根拠に、この方だけの結論をお書きください。"></textarea>`+
+        `<div class="hint">💡 「①四柱推命より」「②タロットより」と同じ考え方で、根拠→結論の順に断定的に書いてください。</div>`;
+      area.appendChild(box);
+    });
   }
 
   const bz=bazi(data.Y,data.M,data.D,data.H||12,data.Min||0,noT);
@@ -690,10 +763,20 @@ function buildReport(){
     `───────────────────────────`,
     `⑥ 総合アドバイス`,`───────────────────────────`,
     document.getElementById('comment_advice').value.trim()||'(未入力)',``,
+  ];
+  const addonLabels=(data.addons||[]).map(k=>ADDON_LABELS[k]||k).concat(data.addonOther?[data.addonOther]:[]);
+  addonLabels.forEach((label,i)=>{
+    lines.push(
+      `───────────────────────────`,
+      `追加鑑定：${label}`,`───────────────────────────`,
+      document.getElementById('comment_addon_'+i).value.trim()||'(未入力)',``
+    );
+  });
+  lines.push(
     `この鑑定が、${data.name}様の新しい一歩の後押しとなりますように。`,
     `まごころを込めて鑑定させていただきました。`,
     `━━━━━━━━━━━━━━━━━━━━━━━━`,
-  ];
+  );
   const txt=lines.join('\n');
   document.getElementById('reportOutput').textContent=txt;
   window._rpt=txt;
@@ -728,6 +811,13 @@ function exportPDF(){
   const ad=escHtml(document.getElementById('comment_avoid_date').value.trim()||'(未入力)');
   const adw=escHtml(document.getElementById('comment_avoid_why').value.trim()||'(未入力)').replace(/\n/g,'<br>');
   const advice=escHtml(document.getElementById('comment_advice').value.trim()||'(未入力)').replace(/\n/g,'<br>');
+
+  const addonLabels=(data.addons||[]).map(k=>ADDON_LABELS[k]||k).concat(data.addonOther?[data.addonOther]:[]);
+  const addonHtml=addonLabels.map((label,i)=>{
+    const el=document.getElementById('comment_addon_'+i);
+    const txt=escHtml((el&&el.value.trim())||'(未入力)').replace(/\n/g,'<br>');
+    return `<div class="pr-section"><h2>追加鑑定：${escHtml(label)}</h2><p>${txt}</p></div>`;
+  }).join('');
 
   document.getElementById('printArea').innerHTML=`
     <div class="pr-page">
@@ -785,6 +875,8 @@ function exportPDF(){
         <h2>総合アドバイス</h2>
         <p>${advice}</p>
       </div>
+
+      ${addonHtml}
 
       <div class="pr-closing">
         この鑑定が、${escHtml(data.name)}様の新しい一歩の後押しとなりますように。<br>
