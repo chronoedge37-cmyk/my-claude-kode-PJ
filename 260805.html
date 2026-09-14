@@ -105,6 +105,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 /* ===== 送信中スピナー ===== */
 .spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(26,18,6,.3);
   border-top-color:#1a1206;border-radius:50%;animation:spin .8s linear infinite;margin-right:.5rem;vertical-align:middle;}
+#notifyStatus .spinner{border-color:rgba(232,195,132,.3);border-top-color:var(--gold-bright);}
 @keyframes spin{to{transform:rotate(360deg);}}
 
 /* ===== 完了アニメ ===== */
@@ -157,7 +158,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
   <h1 class="page-title">鑑定お申し込みフォーム</h1>
   <p class="page-sub">
     以下の項目をご自身で入力のうえ「送信する」を押してください。<br>
-    入力内容はそのまま鑑定師に自動で届きます。
+    入力内容は基本的に自動で鑑定師に届きますが、万一届かなかった場合に備えて送信完了画面でご案内する手順もご確認ください。
   </p>
 
   <div class="panel">
@@ -188,11 +189,17 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
     <h2>② 鑑定内容</h2>
     <div class="field">
       <label>新しく「始めたいこと」<span class="req">*</span></label>
-      <input type="text" id="c_action" placeholder="例：転職活動の開始、入籍、新しい習い事など">
+      <textarea id="c_action" placeholder="例：転職活動を始めたい。今の職場に3年勤めていて待遇に不満はないが、成長できている実感がなく、異業種への転職も含めて動き出すか迷っている。"></textarea>
+      <div class="hint">💡 一言だけでなく、背景や状況もあわせて書いていただくと、より具体的な鑑定が可能になります。</div>
     </div>
     <div class="field">
       <label>いつ頃までに始めたいか<span class="req">*</span></label>
       <input type="text" id="c_period" placeholder="例：8月中、3ヶ月以内など">
+    </div>
+    <div class="field">
+      <label>今の状況や気になっていること(任意)</label>
+      <textarea id="c_detail" placeholder="例：転職するとしたら未経験の業種になるので不安がある。家族にはまだ話していない。今の職場は人間関係は悪くないが評価制度に納得感がない、など"></textarea>
+      <div class="hint">💡 具体的に書いていただくほど、あなただけの結論をお伝えしやすくなります。空欄でも申込みは可能です。</div>
     </div>
   </div>
 
@@ -207,13 +214,11 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
     <div class="panel" style="text-align:center;">
       <div class="done-icon">🌙</div>
       <h2 style="margin-bottom:.8rem;">入力内容を確認しました</h2>
-      <p class="notice" style="text-align:center;margin-bottom:1.6rem;">
-        ご入力と同時にLINEの送信画面が自動で開きます。<br>
-        表示された宛先（宗玄）を確認し、LINEアプリ側で「送信」をタップしてください。<br>
-        その後、下の②お支払いへお進みください。
+      <p class="notice" id="notifyStatus" style="text-align:center;margin-bottom:1.6rem;">
+        <span class="spinner"></span>鑑定師への自動送信を確認しています…
       </p>
 
-      <p class="notice" style="text-align:left;margin-bottom:.6rem;color:var(--gold-bright);font-weight:700;">① LINEの送信画面が開かない場合</p>
+      <p class="notice" id="lineStepLabel" style="text-align:left;margin-bottom:.6rem;color:var(--gold-bright);font-weight:700;">① LINEで鑑定師に送信</p>
       <a id="lineSendBtn" href="#" target="_blank" rel="noopener"
          style="display:block;width:100%;padding:1.1rem;background:#06c755;color:#fff;
                 text-decoration:none;font-family:'Cinzel',serif;font-size:.85rem;
@@ -249,6 +254,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
     <div class="info-row">性別: <strong id="r_gender"></strong></div>
     <div class="info-row">始めたいこと: <strong id="r_action"></strong></div>
     <div class="info-row">希望期間: <strong id="r_period"></strong></div>
+    <div class="info-row" id="r_detailRow" style="display:none;">今の状況・気になっていること: <strong id="r_detail"></strong></div>
   </div>
 
   <div class="panel">
@@ -358,6 +364,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
         生年月日：{{customer_birth}}<br>
         始めたいこと：{{customer_action}}<br>
         希望期間：{{customer_period}}<br>
+        今の状況：{{customer_detail}}<br>
         <br>
         ▼ 鑑定師用URL(クリックして開く)<br>
         {{reading_url}}<br>
@@ -486,22 +493,25 @@ function loadCfg(){try{return JSON.parse(localStorage.getItem('ej_cfg')||'{}');}
 function saveCfg(cfg){try{localStorage.setItem('ej_cfg',JSON.stringify(cfg));}catch(e){}}
 
 // ===== メール通知(EmailJS) =====
+// 成否をPromiseで返す。呼び出し側(submitCustomer)はこれを見て、
+// 「自動で届いた」のか「LINEでの手動送信が必須」なのかをお客様に正直に伝える。
 function sendEmailNotify(data){
   const cfg=loadCfg();
-  if(!cfg.pubkey||!cfg.service||!cfg.template||!cfg.email)return;
+  if(!cfg.pubkey||!cfg.service||!cfg.template||!cfg.email)return Promise.reject(new Error('not configured'));
   const params={
     customer_name:data.name,
     customer_birth:data.birthStr,
     customer_action:data.action,
     customer_period:data.period,
+    customer_detail:data.detail||'',
     reading_url:data.readingURL,
     to_email:cfg.email
   };
   try{
     emailjs.init({publicKey:cfg.pubkey});
-    emailjs.send(cfg.service,cfg.template,params)
-      .catch(function(err){console.error('EmailJS送信失敗:',err);});
-  }catch(e){console.error('EmailJS初期化失敗:',e);}
+    return emailjs.send(cfg.service,cfg.template,params)
+      .catch(function(err){console.error('EmailJS送信失敗:',err);throw err;});
+  }catch(e){console.error('EmailJS初期化失敗:',e);return Promise.reject(e);}
 }
 
 // ===== MODE A: お客様フォーム =====
@@ -529,6 +539,7 @@ function submitCustomer(){
   const gender=document.querySelector('input[name=c_gender]:checked').value;
   const action=document.getElementById('c_action').value.trim();
   const period=document.getElementById('c_period').value.trim();
+  const detail=document.getElementById('c_detail').value.trim();
   const err=document.getElementById('c_err');
 
   if(!name||!action||!period){
@@ -538,14 +549,11 @@ function submitCustomer(){
   }
   err.style.display='none';
 
-  const data={name,Y,M,D,H:hv===''?null:parseInt(hv),Min:mv===''?null:parseInt(mv),gender,action,period};
+  const data={name,Y,M,D,H:hv===''?null:parseInt(hv),Min:mv===''?null:parseInt(mv),gender,action,period,detail};
   const encoded=enc(data);
   const base=location.href.split('?')[0];
   const readingURL=base+'?mode=reading&d='+encodeURIComponent(encoded);
   const birthStr=`${Y}年${M}月${D}日${hv!==''?' '+String(hv).padStart(2,'0')+':'+String(mv||0).padStart(2,'0'):'(時刻不明)'}`;
-
-  // 設定済みならメールでも鑑定師用URLを通知（LINE送信忘れ時の保険）
-  sendEmailNotify({name,birthStr,action,period,readingURL});
 
   // LINEで送るメッセージ本文を組み立てる（長文はLINEの共有リンクが長くなりすぎないよう要約し、全文は鑑定師用リンク先で確認できる）
   const trunc=(s,n)=>s.length>n?s.slice(0,n)+'…(全文はリンク先参照)':s;
@@ -570,16 +578,28 @@ function submitCustomer(){
   document.getElementById('c_done').style.display='block';
   document.getElementById('submitBtn').style.display='none';
 
-  // LINE送信ボタンのリンクも合わせて更新（自動で開かなかった時の保険）
+  // LINE送信ボタンのリンクを設定
   const lineBtn = document.getElementById('lineSendBtn');
   if(lineBtn) lineBtn.href = lineUrl;
-
-  // クリック（ユーザー操作）直後に自動でLINEの送信画面を開く。ボタンを別途押させない。
-  window.open(lineUrl, '_blank', 'noopener');
 
   // 決済リンクに client_reference_id を付与し、氏名を再入力させずに照合できるようにする
   const payBtn = document.getElementById('payBtn');
   if(payBtn) payBtn.href = 'https://buy.stripe.com/bJecN43TM0qWa2q5hV93y02?client_reference_id=' + encodeURIComponent(name);
+
+  // メール自動通知の成否をお客様に正直に伝える。
+  // 「LINEを押せば自動で届く」という誤解を避けるため、LINEは常に「お客様自身がタップして送る」ものとして案内し、
+  // 自動通知(EmailJS)が実際に成功したかどうかで、その要否のトーンだけを変える。
+  const statusEl = document.getElementById('notifyStatus');
+  const lineLabelEl = document.getElementById('lineStepLabel');
+  sendEmailNotify({name,birthStr,action,period,detail,readingURL}).then(function(){
+    statusEl.innerHTML = '✓ 鑑定師のメールに自動で届きました。';
+    statusEl.classList.add('ok');
+    lineLabelEl.textContent = '① LINEでも送る(任意・お守り確認などにご利用ください)';
+  }).catch(function(){
+    statusEl.innerHTML = '⚠️ 自動送信は届いていない可能性があります。下のLINEボタンから必ず送信してください。';
+    statusEl.classList.add('warn');
+    lineLabelEl.textContent = '① LINEで鑑定師に送信(必須)';
+  });
 
   window.scrollTo({top:document.getElementById('c_done').offsetTop-40,behavior:'smooth'});
 }
@@ -592,6 +612,10 @@ function initReading(data){
   document.getElementById('r_gender').textContent=data.gender==='male'?'男性':'女性';
   document.getElementById('r_action').textContent=data.action;
   document.getElementById('r_period').textContent=data.period;
+  if(data.detail){
+    document.getElementById('r_detail').textContent=data.detail;
+    document.getElementById('r_detailRow').style.display='block';
+  }
 
   const bz=bazi(data.Y,data.M,data.D,data.H||12,data.Min||0,noT);
   const c=tally(bz);
