@@ -288,9 +288,18 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 
   <div class="panel">
     <h2>命式(自動計算)</h2>
-    <div class="pillars" id="r_pillars"></div>
-    <div id="r_elements" style="margin:1rem 0;"></div>
-    <div id="r_strength"></div>
+    <div style="display:flex;gap:1.2rem;align-items:flex-start;">
+      <div style="flex:1;min-width:0;">
+        <div class="pillars" id="r_pillars"></div>
+        <div id="r_elements" style="margin:1rem 0;"></div>
+        <div id="r_strength"></div>
+      </div>
+      <div style="text-align:center;flex-shrink:0;">
+        <img id="r_workAmulet" style="width:72px;height:72px;object-fit:contain;
+             filter:drop-shadow(0 0 10px rgba(232,195,132,.45));" alt="" onerror="this.style.display='none'">
+        <div style="font-size:.6rem;color:var(--lavender);opacity:.75;margin-top:.3rem;">お守り(自動選択)</div>
+      </div>
+    </div>
   </div>
 
   <div class="panel" id="r_dayunPanel">
@@ -571,6 +580,38 @@ function addonLabelsOf(data){
   return (data.addons||[]).map(k=>ADDON_LABELS[k]||k).concat(data.addonOther?[data.addonOther]:[]);
 }
 
+// 五行の集計cから、最も強い一行に対応するお守り画像ファイル名を返す(initReadingとexportPDFで共用)
+function amuletFileFor(c){
+  let maxI=0;for(let i=1;i<5;i++){if(c[i]>c[maxI])maxI=i;}
+  return {'木':'wood','火':'fire','土':'earth','金':'metal','水':'water'}[EL[maxI]];
+}
+
+// ===== 支払い後にthanks.htmlへ引き継ぐ「未払いの追加鑑定」リスト =====
+// Stripeの決済リンクは(バックエンドなしでは)複数商品の合算決済ができないため、
+// 本鑑定¥2,000とは別に追加鑑定+¥500を1件ずつ支払ってもらう必要がある。
+// 決済ボタンをtarget="_blank"にしないため、支払い後はStripeの「支払い後リダイレクト」で
+// thanks.htmlに戻ってくる一本道の流れになる。同じオリジン(このサイト)のlocalStorageに
+// 残っている支払いを書いておき、thanks.html側で読み出して続きのボタンを出す。
+// (決済の成否そのものはバックエンドがないため確認できない。ボタンを押した時点で
+//  「支払いに進んだ」とみなしてリストから外す、という割り切った実装)
+const PENDING_ADDONS_KEY = 'sougen_pending_addons';
+function savePendingAddons(name, addonLabels){
+  try{
+    if(!addonLabels.length){localStorage.removeItem(PENDING_ADDONS_KEY);return;}
+    localStorage.setItem(PENDING_ADDONS_KEY, JSON.stringify({name, addonLabels}));
+  }catch(e){}
+}
+function removePendingAddon(label){
+  try{
+    const raw=localStorage.getItem(PENDING_ADDONS_KEY);
+    if(!raw)return;
+    const rec=JSON.parse(raw);
+    rec.addonLabels=rec.addonLabels.filter(l=>l!==label);
+    if(rec.addonLabels.length) localStorage.setItem(PENDING_ADDONS_KEY, JSON.stringify(rec));
+    else localStorage.removeItem(PENDING_ADDONS_KEY);
+  }catch(e){}
+}
+
 // 送信完了画面を描画する。新規送信時とURL復元時の両方から呼ばれる共通処理。
 // (この画面はURLの done= パラメータに丸ごと保存されるので、タブが失われても同じ内容に戻れる。
 //  ただしメール自動通知は「送信した瞬間に1回だけ」が原則なので、isFreshSubmitがtrueの時しか行わない)
@@ -616,17 +657,28 @@ function renderCompletion(data, isFreshSubmit){
   document.getElementById('payTotal').textContent = '¥' + total.toLocaleString();
   const payArea = document.getElementById('payButtons');
   payArea.innerHTML='';
-  const makeBtn=(href,text)=>{
+  // 決済ボタンはtarget="_blank"にしない。モバイルでは新しいタブが確実に開くとは限らず
+  // (特にアプリ内ブラウザ)、その場合タブごと元の画面(と残りの決済ボタン)が失われてしまう。
+  // 代わりに通常の画面遷移にし、Stripe側の「支払い後リダイレクト先」をthanks.htmlに設定してもらうことで、
+  // 支払い後は必ずthanks.htmlに戻ってくる一本道の流れにする。残っている追加鑑定はPENDING_ADDONS_KEY
+  // 経由でthanks.html側に引き継がれる(savePendingAddons/クリック時のremovePendingAddon参照)。
+  const makeBtn=(href,text,onClick)=>{
     const a=document.createElement('a');
     a.className='btn-primary';
-    a.href=href;a.target='_blank';a.rel='noopener';
+    a.href=href;
     a.style.textDecoration='none';a.style.display='block';a.style.marginBottom='.8rem';
     a.textContent=text;
+    if(onClick) a.addEventListener('click',onClick);
     return a;
   };
+  savePendingAddons(name, addonLabels);
   payArea.appendChild(makeBtn(STRIPE_BASE_URL+'?client_reference_id='+encodeURIComponent(name), '本鑑定のお支払い(¥2,000)'));
   addonLabels.forEach(label=>{
-    payArea.appendChild(makeBtn(STRIPE_ADDON_URL+'?client_reference_id='+encodeURIComponent(name+'/'+label), label+' のお支払い(+¥500)'));
+    payArea.appendChild(makeBtn(
+      STRIPE_ADDON_URL+'?client_reference_id='+encodeURIComponent(name+'/'+label),
+      label+' のお支払い(+¥500)',
+      ()=>removePendingAddon(label)
+    ));
   });
 
   const statusEl = document.getElementById('notifyStatus');
@@ -733,6 +785,7 @@ function initReading(data){
     `<div class="ebar-row"><div class="ebar-lbl" style="color:${EC[i]}">${el}</div>
      <div class="ebar-track"><div class="ebar-fill" style="width:${(c[i]/tot*100).toFixed(1)}%;background:${EC[i]}"></div></div>
      <div class="ebar-cnt">${c[i]}</div></div>`).join('');
+  document.getElementById('r_workAmulet').src='assets/amulets/'+amuletFileFor(c)+'.png';
 
   // strength
   const dm=SE[bz.day.s],sup=c[dm]+c[(dm+4)%5],drn=c[(dm+1)%5]+c[(dm+2)%5]+c[(dm+3)%5];
@@ -755,6 +808,34 @@ function initReading(data){
     document.getElementById('r_dayunTable').innerHTML=rows;
   }
   window._rd={data,bz,c};
+}
+
+// ===== 鑑定師のコメント下書きを自動保存・復元する =====
+// このページはリロードされるとJSの状態(コメント欄の入力内容)が全て消える。
+// 書きかけの内容が消えて「未入力」に戻ったように見えるのを防ぐため、この鑑定(dの値)ごとに
+// localStorageへ自動保存し、次に同じリンクを開いたときに自動で復元する。
+function draftKeyFor(d){ return 'sougen_draft_'+d; }
+function saveDraft(d){
+  const draft={};
+  document.querySelectorAll('#modeReading textarea[id^="comment_"]').forEach(el=>{draft[el.id]=el.value;});
+  try{localStorage.setItem(draftKeyFor(d), JSON.stringify(draft));}catch(e){}
+}
+function loadDraft(d){
+  try{
+    const raw=localStorage.getItem(draftKeyFor(d));
+    if(!raw)return;
+    const draft=JSON.parse(raw);
+    Object.keys(draft).forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.value=draft[id];
+    });
+  }catch(e){}
+}
+function initCommentaryDraft(d){
+  loadDraft(d);
+  document.getElementById('modeReading').addEventListener('input', e=>{
+    if(e.target.tagName==='TEXTAREA' && e.target.id.startsWith('comment_')) saveDraft(d);
+  });
 }
 
 function buildReport(){
@@ -873,8 +954,7 @@ function exportPDF(){
   if(!window._rd)return;
   const {data,bz,c}=window._rd;
   const dm=SE[bz.day.s];
-  let maxI=0;for(let i=1;i<5;i++){if(c[i]>c[maxI])maxI=i;}
-  const amuletFile={'木':'wood','火':'fire','土':'earth','金':'metal','水':'water'}[EL[maxI]];
+  const amuletFile=amuletFileFor(c);
 
   const shishu=escHtml(document.getElementById('comment_shishu').value.trim()||'(未入力)').replace(/\n/g,'<br>');
   const tarot=escHtml(document.getElementById('comment_tarot').value.trim()||'(未入力)').replace(/\n/g,'<br>');
@@ -1005,6 +1085,7 @@ function saveSetup(){
     const data=dec(d);
     if(!data){document.getElementById('modeError').style.display='block';return;}
     document.getElementById('modeReading').style.display='block';initReading(data);
+    initCommentaryDraft(d);
   } else if(mode==='setup'){
     document.getElementById('modeSetup').style.display='block';initSetup();
   } else {
