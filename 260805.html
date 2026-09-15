@@ -41,6 +41,7 @@ input[type=text],select,textarea{
   border:1px solid rgba(232,195,132,.4);color:var(--ivory);font-size:.92rem;
   font-family:'Shippori Antique B1',sans-serif;border-radius:1px;appearance:none;}
 textarea{min-height:110px;line-height:1.75;resize:vertical;}
+textarea.short{min-height:52px;}
 select:focus,input:focus,textarea:focus{outline:none;border-color:var(--gold-bright);}
 .field-row{display:flex;gap:.7rem;}
 .field-row .field{flex:1;}
@@ -118,23 +119,30 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
   body *{visibility:hidden;}
   .print-area,.print-area *{visibility:visible;}
   .print-area{display:block;position:absolute;left:0;top:0;width:100%;}
-  @page{margin:16mm;}
+  @page{margin:12mm;}
 }
-.pr-page{font-family:'Shippori Antique B1',sans-serif;color:#2a1f10;background:#fff;}
-.pr-eyebrow{font-family:'Cinzel',serif;font-size:10px;letter-spacing:.3em;color:#a5793a;text-transform:uppercase;margin-bottom:6px;}
-.pr-title{font-family:'Shippori Mincho B1',serif;font-size:26px;font-weight:800;margin-bottom:4px;color:#1a1206;}
-.pr-name{font-size:14px;color:#5c4a30;margin-bottom:18px;}
+.pr-page{font-family:'Shippori Antique B1',sans-serif;color:#2a1f10;background:#fdfaf2;
+  border:1px solid #dcc48f;padding:14mm 10mm;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.pr-eyebrow{font-family:'Cinzel',serif;font-size:10px;letter-spacing:.3em;color:#a5793a;text-transform:uppercase;margin-bottom:6px;text-align:center;}
+.pr-title{font-family:'Shippori Mincho B1',serif;font-size:28px;font-weight:800;margin-bottom:4px;color:#1a1206;text-align:center;}
+.pr-rule{display:flex;align-items:center;margin:8px 0 20px;}
+.pr-rule::before,.pr-rule::after{content:'';flex:1;height:1px;background:#cfa15c;}
+.pr-rule span{width:6px;height:6px;background:#cfa15c;transform:rotate(45deg);margin:0 10px;flex-shrink:0;}
+.pr-name{font-size:14px;color:#5c4a30;margin-bottom:18px;text-align:center;}
 .pr-meta{font-size:12px;color:#4a3c28;line-height:1.9;margin-bottom:18px;}
-.pr-pillars-row{display:flex;align-items:center;gap:16px;margin-bottom:10px;}
-.pr-pillars{display:flex;gap:8px;flex:1;}
-.pr-pillar{border:1px solid #cfa15c;text-align:center;padding:8px 10px;font-size:10px;color:#8a6d3e;border-radius:2px;}
+.pr-pillars-row{display:flex;align-items:flex-start;gap:18px;margin-bottom:8px;}
+.pr-pillars{display:flex;gap:8px;flex-wrap:wrap;flex:1;}
+.pr-pillar{border:1px solid #cfa15c;text-align:center;padding:8px 10px;font-size:10px;color:#8a6d3e;border-radius:2px;background:#fff;}
 .pr-pillar span{display:block;font-family:'Shippori Mincho B1',serif;font-size:18px;color:#1a1206;margin-top:4px;}
-.pr-amulet{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid #cfa15c;flex-shrink:0;}
-.pr-elements{font-size:11px;color:#5c4a30;margin-bottom:22px;}
+.pr-amulet{width:76px;height:76px;object-fit:contain;flex-shrink:0;}
+.pr-radar-wrap{text-align:center;margin:4px 0 22px;}
+.pr-radar-cap{font-size:10px;color:#8a6d3e;letter-spacing:.08em;margin-top:2px;}
 .pr-section{margin-bottom:18px;}
-.pr-section h2{font-family:'Shippori Mincho B1',serif;font-size:14px;color:#a5793a;border-bottom:1px solid #e8d9b8;padding-bottom:4px;margin-bottom:8px;}
+.pr-section-head{display:flex;align-items:center;gap:10px;border-bottom:1px solid #e8d9b8;padding-bottom:4px;margin-bottom:8px;}
+.pr-section h2{font-family:'Shippori Mincho B1',serif;font-size:14px;color:#a5793a;margin:0;}
 .pr-section p{font-size:12.5px;line-height:1.9;color:#2a1f10;}
-.pr-day{border:1px solid #e8d9b8;border-radius:3px;padding:10px 14px;margin-bottom:10px;}
+.pr-day{border:1px solid #e8d9b8;border-radius:3px;padding:10px 14px;margin-bottom:10px;background:#fff;}
 .pr-day-label{font-family:'Cinzel',serif;font-size:10px;letter-spacing:.08em;color:#8a6d3e;}
 .pr-day-date{font-family:'Shippori Mincho B1',serif;font-size:15px;margin:4px 0 6px;color:#1a1206;}
 .pr-day p{font-size:12px;line-height:1.85;color:#2a1f10;}
@@ -217,7 +225,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
     </div>
     <div class="field">
       <label>その他知りたいこと(任意・具体的に)</label>
-      <textarea id="c_addon_other" placeholder="例：新しく始める副業がうまくいくか知りたい"></textarea>
+      <textarea id="c_addon_other" class="short" placeholder="例：新しく始める副業がうまくいくか知りたい"></textarea>
     </div>
   </div>
 
@@ -227,14 +235,24 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
     送信する
   </button>
 
-  <!-- 送信完了画面 -->
+  <!-- 送信完了画面(この画面の情報はURLに保存されるため、再読み込みやアプリ切替後もブックマーク/戻るで復元できる) -->
   <div id="c_done" style="display:none;margin-top:1.6rem;">
     <div class="panel" style="text-align:center;">
       <div class="done-icon">🌙</div>
-      <h2 style="margin-bottom:.8rem;">入力内容を確認しました</h2>
+      <h2 style="margin-bottom:.4rem;">入力内容を確認しました</h2>
+      <p class="notice" style="text-align:center;margin-bottom:1.6rem;">
+        この画面はURLに保存されています。ページを閉じても、もう一度同じリンクを開けば続きからお支払いいただけます。
+      </p>
       <p class="notice" id="notifyStatus" style="text-align:center;margin-bottom:1.6rem;">
         <span class="spinner"></span>鑑定師への自動送信を確認しています…
       </p>
+
+      <div style="text-align:left;margin-bottom:1.6rem;background:rgba(0,0,0,.2);padding:1rem 1.2rem;">
+        <div class="info-row">お名前: <strong id="done_name"></strong></div>
+        <div class="info-row">生年月日: <strong id="done_birth"></strong></div>
+        <div class="info-row">始めたいこと: <strong id="done_action"></strong></div>
+        <div class="info-row">希望期間: <strong id="done_period"></strong></div>
+      </div>
 
       <p class="notice" id="lineStepLabel" style="text-align:left;margin-bottom:.6rem;color:var(--gold-bright);font-weight:700;">① LINEで鑑定師に送信</p>
       <a id="lineSendBtn" href="#" target="_blank" rel="noopener"
@@ -245,22 +263,9 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
         LINEで鑑定師に送信する
       </a>
 
-      <div style="text-align:left;margin-bottom:1.6rem;background:rgba(0,0,0,.2);padding:1rem 1.2rem;">
-        <div class="info-row">お名前: <strong id="done_name"></strong></div>
-        <div class="info-row">生年月日: <strong id="done_birth"></strong></div>
-        <div class="info-row">始めたいこと: <strong id="done_action"></strong></div>
-        <div class="info-row">希望期間: <strong id="done_period"></strong></div>
-      </div>
-
-      <p class="notice" style="text-align:left;margin-bottom:.6rem;color:var(--gold-bright);font-weight:700;">② お支払いへ進む(日付の鑑定・¥2,000)</p>
-      <a class="btn-primary" id="payBtn" href="#" target="_blank" rel="noopener" style="text-decoration:none;">
-        お支払いへ進む(¥2,000)
-      </a>
-
-      <div id="addonPayArea" style="display:none;margin-top:1.6rem;">
-        <p class="notice" style="text-align:left;margin-bottom:.6rem;color:var(--gold-bright);font-weight:700;">③ 追加鑑定のお支払い(1件+¥500)</p>
-        <div id="addonPayButtons"></div>
-      </div>
+      <p class="notice" style="text-align:left;margin-bottom:.2rem;color:var(--gold-bright);font-weight:700;">② お支払い(合計 <span id="payTotal"></span>)</p>
+      <p class="notice" style="text-align:left;margin-bottom:.8rem;">下のボタンをすべてタップしてお支払いを完了してください(それぞれ別画面で開きます)。</p>
+      <div id="payButtons"></div>
     </div>
   </div>
 </div>
@@ -559,36 +564,24 @@ function initForm(){
 
 // 追加鑑定(+¥500)の選択肢。表示名と、報告書・お客様情報パネルで使うラベルをここで一元管理する。
 const ADDON_LABELS = {renai:'恋愛について', aisho:'相性について', shoubu:'勝負運について'};
+const STRIPE_BASE_URL = 'https://buy.stripe.com/bJecN43TM0qWa2q5hV93y02';
 const STRIPE_ADDON_URL = 'https://buy.stripe.com/fZu28q9e6ddI7UieSv93y03';
 
-function submitCustomer(){
-  const name=document.getElementById('c_name').value.trim();
-  const Y=parseInt(document.getElementById('c_year').value);
-  const M=parseInt(document.getElementById('c_month').value);
-  const D=parseInt(document.getElementById('c_day').value);
-  const hv=document.getElementById('c_hour').value;
-  const mv=document.getElementById('c_min').value;
-  const gender=document.querySelector('input[name=c_gender]:checked').value;
-  const action=document.getElementById('c_action').value.trim();
-  const period=document.getElementById('c_period').value.trim();
-  const detail=document.getElementById('c_detail').value.trim();
-  const addons=Array.from(document.querySelectorAll('input[name=c_addon]:checked')).map(el=>el.value);
-  const addonOther=document.getElementById('c_addon_other').value.trim();
-  const err=document.getElementById('c_err');
+function addonLabelsOf(data){
+  return (data.addons||[]).map(k=>ADDON_LABELS[k]||k).concat(data.addonOther?[data.addonOther]:[]);
+}
 
-  if(!name||!action||!period){
-    err.textContent='お名前・始めたいこと・希望期間は必須です。';
-    err.style.display='block';
-    return;
-  }
-  err.style.display='none';
-
-  const data={name,Y,M,D,H:hv===''?null:parseInt(hv),Min:mv===''?null:parseInt(mv),gender,action,period,detail,addons,addonOther};
+// 送信完了画面を描画する。新規送信時とURL復元時の両方から呼ばれる共通処理。
+// (この画面はURLの done= パラメータに丸ごと保存されるので、タブが失われても同じ内容に戻れる。
+//  ただしメール自動通知は「送信した瞬間に1回だけ」が原則なので、isFreshSubmitがtrueの時しか行わない)
+function renderCompletion(data, isFreshSubmit){
+  const {name,Y,M,D,H,Min,gender,action,period,detail}=data;
+  const hv=H===null||H===undefined?'':H, mv=Min===null||Min===undefined?'':Min;
   const encoded=enc(data);
   const base=location.href.split('?')[0];
   const readingURL=base+'?mode=reading&d='+encodeURIComponent(encoded);
   const birthStr=`${Y}年${M}月${D}日${hv!==''?' '+String(hv).padStart(2,'0')+':'+String(mv||0).padStart(2,'0'):'(時刻不明)'}`;
-  const addonLabels=addons.map(k=>ADDON_LABELS[k]).concat(addonOther?[addonOther]:[]);
+  const addonLabels=addonLabelsOf(data);
 
   // LINEで送るメッセージ本文を組み立てる（長文はLINEの共有リンクが長くなりすぎないよう要約し、全文は鑑定師用リンク先で確認できる）
   const trunc=(s,n)=>s.length>n?s.slice(0,n)+'…(全文はリンク先参照)':s;
@@ -614,46 +607,82 @@ function submitCustomer(){
   document.getElementById('c_done').style.display='block';
   document.getElementById('submitBtn').style.display='none';
 
-  // LINE送信ボタンのリンクを設定
   const lineBtn = document.getElementById('lineSendBtn');
   if(lineBtn) lineBtn.href = lineUrl;
 
-  // 決済リンクに client_reference_id を付与し、氏名を再入力させずに照合できるようにする
-  const payBtn = document.getElementById('payBtn');
-  if(payBtn) payBtn.href = 'https://buy.stripe.com/bJecN43TM0qWa2q5hV93y02?client_reference_id=' + encodeURIComponent(name);
+  // 支払いボタンを「本鑑定¥2,000」＋「追加鑑定+¥500×件数」の1つのまとまりとして並べ、
+  // 合計金額を先に見せることで、複数の決済であっても同時に完了させるべき1つの手続きだと分かるようにする。
+  const total = 2000 + addonLabels.length*500;
+  document.getElementById('payTotal').textContent = '¥' + total.toLocaleString();
+  const payArea = document.getElementById('payButtons');
+  payArea.innerHTML='';
+  const makeBtn=(href,text)=>{
+    const a=document.createElement('a');
+    a.className='btn-primary';
+    a.href=href;a.target='_blank';a.rel='noopener';
+    a.style.textDecoration='none';a.style.display='block';a.style.marginBottom='.8rem';
+    a.textContent=text;
+    return a;
+  };
+  payArea.appendChild(makeBtn(STRIPE_BASE_URL+'?client_reference_id='+encodeURIComponent(name), '本鑑定のお支払い(¥2,000)'));
+  addonLabels.forEach(label=>{
+    payArea.appendChild(makeBtn(STRIPE_ADDON_URL+'?client_reference_id='+encodeURIComponent(name+'/'+label), label+' のお支払い(+¥500)'));
+  });
 
-  // 追加鑑定が選択されていれば、1件につき+¥500の決済ボタンをその数だけ表示する
-  // (Stripeの単一Payment Linkでは複数の異なるテーマをまとめて決済できないため、件数分ボタンを並べる方式にしている)
-  if(addonLabels.length){
-    const area=document.getElementById('addonPayArea');
-    const btnArea=document.getElementById('addonPayButtons');
-    btnArea.innerHTML='';
-    addonLabels.forEach(label=>{
-      const a=document.createElement('a');
-      a.className='btn-primary';
-      a.href=STRIPE_ADDON_URL+'?client_reference_id='+encodeURIComponent(name+'/'+label);
-      a.target='_blank';a.rel='noopener';
-      a.style.textDecoration='none';a.style.display='block';a.style.marginBottom='.8rem';
-      a.textContent=label+' のお支払い(+¥500)';
-      btnArea.appendChild(a);
-    });
-    area.style.display='block';
-  }
-
-  // メール自動通知の成否をお客様に正直に伝える。
-  // 「LINEを押せば自動で届く」という誤解を避けるため、LINEは常に「お客様自身がタップして送る」ものとして案内し、
-  // 自動通知(EmailJS)が実際に成功したかどうかで、その要否のトーンだけを変える。
   const statusEl = document.getElementById('notifyStatus');
   const lineLabelEl = document.getElementById('lineStepLabel');
-  sendEmailNotify({name,birthStr,action,period,detail,addons:addonLabels.join('、'),readingURL}).then(function(){
-    statusEl.innerHTML = '✓ 鑑定師のメールに自動で届きました。';
-    statusEl.classList.add('ok');
-    lineLabelEl.textContent = '① LINEでも送る(任意・お守り確認などにご利用ください)';
-  }).catch(function(){
-    statusEl.innerHTML = '⚠️ 自動送信は届いていない可能性があります。下のLINEボタンから必ず送信してください。';
-    statusEl.classList.add('warn');
-    lineLabelEl.textContent = '① LINEで鑑定師に送信(必須)';
-  });
+  if(isFreshSubmit){
+    // メール自動通知の成否をお客様に正直に伝える。
+    // 「LINEを押せば自動で届く」という誤解を避けるため、LINEは常に「お客様自身がタップして送る」ものとして案内し、
+    // 自動通知(EmailJS)が実際に成功したかどうかで、その要否のトーンだけを変える。
+    sendEmailNotify({name,birthStr,action,period,detail,addons:addonLabels.join('、'),readingURL}).then(function(){
+      statusEl.innerHTML = '✓ 鑑定師のメールに自動で届きました。';
+      statusEl.classList.add('ok');
+      lineLabelEl.textContent = '① LINEでも送る(任意・お守り確認などにご利用ください)';
+    }).catch(function(){
+      statusEl.innerHTML = '⚠️ 自動送信は届いていない可能性があります。下のLINEボタンから必ず送信してください。';
+      statusEl.classList.add('warn');
+      lineLabelEl.textContent = '① LINEで鑑定師に送信(必須)';
+    });
+  } else {
+    // URLから復元した場合はメールを再送しない(開くたびに鑑定師へ二重通知が飛ぶのを防ぐ)
+    statusEl.innerHTML = 'この画面は前回の送信内容から復元されました。メールの自動送信は送信時に1回だけ行われています。';
+    lineLabelEl.textContent = '① LINEでまだ送信していない場合はこちら';
+  }
+  return readingURL;
+}
+
+function submitCustomer(){
+  const name=document.getElementById('c_name').value.trim();
+  const Y=parseInt(document.getElementById('c_year').value);
+  const M=parseInt(document.getElementById('c_month').value);
+  const D=parseInt(document.getElementById('c_day').value);
+  const hv=document.getElementById('c_hour').value;
+  const mv=document.getElementById('c_min').value;
+  const gender=document.querySelector('input[name=c_gender]:checked').value;
+  const action=document.getElementById('c_action').value.trim();
+  const period=document.getElementById('c_period').value.trim();
+  const detail=document.getElementById('c_detail').value.trim();
+  const addons=Array.from(document.querySelectorAll('input[name=c_addon]:checked')).map(el=>el.value);
+  const addonOther=document.getElementById('c_addon_other').value.trim();
+  const err=document.getElementById('c_err');
+
+  if(!name||!action||!period){
+    err.textContent='お名前・始めたいこと・希望期間は必須です。';
+    err.style.display='block';
+    return;
+  }
+  err.style.display='none';
+
+  const data={name,Y,M,D,H:hv===''?null:parseInt(hv),Min:mv===''?null:parseInt(mv),gender,action,period,detail,addons,addonOther};
+
+  // この完了画面をURLに保存する。タブが失われる/リロードされる/LINEアプリとの往復で
+  // ブラウザが状態を破棄しても、同じURLに戻れば支払いボタンが必ず揃って復元される。
+  const base=location.href.split('?')[0];
+  const doneURL = base+'?mode=customer&done='+encodeURIComponent(enc(data));
+  history.replaceState(null,'',doneURL);
+
+  renderCompletion(data, true);
 
   window.scrollTo({top:document.getElementById('c_done').offsetTop-40,behavior:'smooth'});
 }
@@ -672,7 +701,7 @@ function initReading(data){
   }
 
   // 追加鑑定(+¥500/件)：希望テーマ名を表示し、テーマごとにコメント欄を1つずつ動的に追加する
-  const addonLabels=(data.addons||[]).map(k=>ADDON_LABELS[k]||k).concat(data.addonOther?[data.addonOther]:[]);
+  const addonLabels=addonLabelsOf(data);
   if(addonLabels.length){
     document.getElementById('r_addons').textContent=addonLabels.join('、');
     document.getElementById('r_addonsRow').style.display='block';
@@ -763,7 +792,7 @@ function buildReport(){
     `⑥ 総合アドバイス`,`───────────────────────────`,
     document.getElementById('comment_advice').value.trim()||'(未入力)',``,
   ];
-  const addonLabels=(data.addons||[]).map(k=>ADDON_LABELS[k]||k).concat(data.addonOther?[data.addonOther]:[]);
+  const addonLabels=addonLabelsOf(data);
   addonLabels.forEach((label,i)=>{
     lines.push(
       `───────────────────────────`,
@@ -791,6 +820,54 @@ function escHtml(s){
   return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// ===== 五行レーダーチャート(SVG・報告書用) =====
+function elementRadarSVG(c){
+  const cx=100, cy=104, R=72;
+  const maxV=Math.max.apply(null,c.concat([1]));
+  const angleFor=i=>(-90+i*72)*Math.PI/180;
+  const pt=(i,r)=>[cx+Math.cos(angleFor(i))*r, cy+Math.sin(angleFor(i))*r];
+  const ring=r=>EL.map((_,i)=>pt(i,r).join(',')).join(' ');
+  const dataPts=EL.map((_,i)=>{
+    const r=R*(0.22+0.78*(c[i]/maxV));
+    return pt(i,r).join(',');
+  }).join(' ');
+  const axisLines=EL.map((_,i)=>{
+    const [x,y]=pt(i,R);
+    return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#d8c69a" stroke-width="1" opacity=".55"/>`;
+  }).join('');
+  const dots=EL.map((_,i)=>{
+    const r=R*(0.22+0.78*(c[i]/maxV));
+    const [x,y]=pt(i,r);
+    return `<circle cx="${x}" cy="${y}" r="3.6" fill="${EC[i]}" stroke="#fff" stroke-width="1.2"/>`;
+  }).join('');
+  const labels=EL.map((el,i)=>{
+    const [x,y]=pt(i,R+24);
+    return `<text x="${x}" y="${y-3}" text-anchor="middle" font-family="'Shippori Mincho B1',serif" font-size="15" font-weight="700" fill="${EC[i]}">${el}</text>`
+      + `<text x="${x}" y="${y+11}" text-anchor="middle" font-family="'Shippori Antique B1',sans-serif" font-size="9" fill="#8a6d3e">${c[i]}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 200 210" width="176" height="185">
+    <polygon points="${ring(R)}" fill="none" stroke="#cfa15c" stroke-width="1.2" opacity=".55"/>
+    <polygon points="${ring(R*0.66)}" fill="none" stroke="#cfa15c" stroke-width="1" opacity=".35"/>
+    <polygon points="${ring(R*0.33)}" fill="none" stroke="#cfa15c" stroke-width="1" opacity=".25"/>
+    ${axisLines}
+    <polygon points="${dataPts}" fill="rgba(207,161,92,.3)" stroke="#a5793a" stroke-width="1.6"/>
+    ${dots}
+    ${labels}
+  </svg>`;
+}
+
+// ===== タロットの装飾カードアイコン(SVG) =====
+function tarotCardSVG(){
+  return `<svg viewBox="0 0 60 90" width="30" height="45" style="flex-shrink:0;">
+    <rect x="2" y="2" width="56" height="86" rx="6" fill="#1a1206" stroke="#cfa15c" stroke-width="2"/>
+    <rect x="7" y="7" width="46" height="76" rx="3" fill="none" stroke="#e8c384" stroke-width="1" opacity=".7"/>
+    <circle cx="30" cy="34" r="12" fill="none" stroke="#e8c384" stroke-width="1.4"/>
+    <path d="M30 20 L33 30 L43 30 L35 36 L38 46 L30 40 L22 46 L25 36 L17 30 L27 30 Z" fill="#e8c384"/>
+    <line x1="14" y1="62" x2="46" y2="62" stroke="#e8c384" stroke-width="1" opacity=".6"/>
+    <line x1="14" y1="68" x2="46" y2="68" stroke="#e8c384" stroke-width="1" opacity=".4"/>
+  </svg>`;
+}
+
 // ===== PDF保存(ブラウザ印刷を利用) =====
 function exportPDF(){
   if(!window._rd)return;
@@ -811,7 +888,7 @@ function exportPDF(){
   const adw=escHtml(document.getElementById('comment_avoid_why').value.trim()||'(未入力)').replace(/\n/g,'<br>');
   const advice=escHtml(document.getElementById('comment_advice').value.trim()||'(未入力)').replace(/\n/g,'<br>');
 
-  const addonLabels=(data.addons||[]).map(k=>ADDON_LABELS[k]||k).concat(data.addonOther?[data.addonOther]:[]);
+  const addonLabels=addonLabelsOf(data);
   const addonHtml=addonLabels.map((label,i)=>{
     const el=document.getElementById('comment_addon_'+i);
     const txt=escHtml((el&&el.value.trim())||'(未入力)').replace(/\n/g,'<br>');
@@ -822,6 +899,7 @@ function exportPDF(){
     <div class="pr-page">
       <div class="pr-eyebrow">Five Elements &amp; Tarot Counsel</div>
       <h1 class="pr-title">鑑定報告書</h1>
+      <div class="pr-rule"><span></span></div>
       <div class="pr-name">${escHtml(data.name)} 様</div>
 
       <div class="pr-meta">
@@ -838,14 +916,18 @@ function exportPDF(){
         </div>
         <img class="pr-amulet" src="assets/amulets/${amuletFile}.png" alt="" onerror="this.remove()">
       </div>
-      <div class="pr-elements">日主：${ST[bz.day.s]}(${EL[dm]}) ／ 五行：木${c[0]} 火${c[1]} 土${c[2]} 金${c[3]} 水${c[4]}</div>
+
+      <div class="pr-radar-wrap">
+        ${elementRadarSVG(c)}
+        <div class="pr-radar-cap">日主：${ST[bz.day.s]}(${EL[dm]})</div>
+      </div>
 
       <div class="pr-section">
-        <h2>① 四柱推命より</h2>
+        <div class="pr-section-head">${tarotCardSVG()}<h2>① 四柱推命より</h2></div>
         <p>${shishu}</p>
       </div>
       <div class="pr-section">
-        <h2>② タロットより</h2>
+        <div class="pr-section-head">${tarotCardSVG()}<h2>② タロットより</h2></div>
         <p>${tarot}</p>
       </div>
 
@@ -912,9 +994,13 @@ function saveSetup(){
 
 // ===== ルーティング =====
 (function(){
-  const p=new URLSearchParams(location.search),mode=p.get('mode'),d=p.get('d');
+  const p=new URLSearchParams(location.search),mode=p.get('mode'),d=p.get('d'),done=p.get('done');
   if(!mode||mode==='customer'){
     document.getElementById('modeCustomer').style.display='block';initForm();applyPrefill();
+    if(done){
+      const data=dec(done);
+      if(data) renderCompletion(data,false);
+    }
   } else if(mode==='reading'&&d){
     const data=dec(d);
     if(!data){document.getElementById('modeError').style.display='block';return;}
