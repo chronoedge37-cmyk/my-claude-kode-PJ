@@ -24,6 +24,11 @@ h1,h2{font-family:'Shippori Mincho B1',serif;word-break:keep-all;}
 h1{font-size:1.4rem;margin-bottom:1.2rem;}
 p{font-size:.88rem;line-height:1.95;color:var(--lavender);margin-bottom:1rem;}
 .brand{font-family:'Cinzel',serif;font-size:.64rem;letter-spacing:.2em;color:var(--gold-bright);text-transform:uppercase;margin-top:1.6rem;}
+.more-pay{margin-top:1.8rem;padding-top:1.6rem;border-top:1px solid rgba(232,195,132,.25);text-align:left;}
+.more-pay p{text-align:left;}
+.pay-btn{display:block;width:100%;padding:1rem;margin-bottom:.8rem;text-align:center;text-decoration:none;
+  background:linear-gradient(135deg,var(--gold),#a5793a);color:#1a1206;font-family:'Cinzel',serif;font-size:.8rem;
+  letter-spacing:.1em;text-transform:uppercase;font-weight:700;border-radius:1px;}
 </style>
 </head>
 <body>
@@ -39,7 +44,45 @@ p{font-size:.88rem;line-height:1.95;color:var(--lavender);margin-bottom:1rem;}
   <p>
     もしLINEでの送信がまだお済みでない場合は、送信完了画面の「LINEで鑑定師に送信する」ボタンから、お申込み内容を必ずお送りください。
   </p>
+  <div id="morePay" class="more-pay" style="display:none;">
+    <p style="color:var(--gold-bright);font-weight:700;">追加鑑定のお支払いがまだ残っています</p>
+    <div id="morePayButtons"></div>
+  </div>
   <div class="brand">五行庵 宗玄</div>
 </div>
+<script>
+// 260805.htmlのPENDING_ADDONS_KEY/STRIPE_ADDON_URLと対になっている(このサイトには
+// 複数ページをまたぐ共有JSモジュールが無いため、この2行だけ意図的に複製している)。
+// 本鑑定¥2,000とは別に追加鑑定+¥500を1件ずつ支払ってもらう必要があり、決済ボタンは
+// target="_blank"にしていないため、支払い後は必ずこのページに戻ってくる。まだ残っている
+// 追加鑑定があれば、ここでその続きの支払いボタンを出す。
+const STRIPE_ADDON_URL = 'https://buy.stripe.com/fZu28q9e6ddI7UieSv93y03';
+const PENDING_ADDONS_KEY = 'sougen_pending_addons';
+(function(){
+  try{
+    const raw=localStorage.getItem(PENDING_ADDONS_KEY);
+    if(!raw)return;
+    const {name,addonLabels}=JSON.parse(raw);
+    if(!addonLabels||!addonLabels.length)return;
+    const area=document.getElementById('morePayButtons');
+    addonLabels.forEach(label=>{
+      const a=document.createElement('a');
+      a.className='pay-btn';
+      a.href=STRIPE_ADDON_URL+'?client_reference_id='+encodeURIComponent(name+'/'+label);
+      a.textContent=label+' のお支払い(+¥500)';
+      a.addEventListener('click',()=>{
+        try{
+          const rec=JSON.parse(localStorage.getItem(PENDING_ADDONS_KEY)||'{}');
+          rec.addonLabels=(rec.addonLabels||[]).filter(l=>l!==label);
+          if(rec.addonLabels.length) localStorage.setItem(PENDING_ADDONS_KEY,JSON.stringify(rec));
+          else localStorage.removeItem(PENDING_ADDONS_KEY);
+        }catch(e){}
+      });
+      area.appendChild(a);
+    });
+    document.getElementById('morePay').style.display='block';
+  }catch(e){}
+})();
+</script>
 </body>
 </html>
