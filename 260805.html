@@ -95,6 +95,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 .commentary-box .lbl{font-family:'Cinzel',serif;font-size:.64rem;letter-spacing:.15em;color:var(--lavender);text-transform:uppercase;margin-bottom:.6rem;display:block;}
 .commentary-box textarea{background:rgba(255,255,255,.03);border-color:rgba(182,166,223,.3);font-size:.88rem;}
 .hint{font-size:.74rem;color:var(--lavender);opacity:.65;margin-top:.4rem;line-height:1.7;}
+.hint code{background:rgba(232,195,132,.12);color:var(--gold-bright);padding:.1rem .35rem;border-radius:2px;font-size:.9em;white-space:nowrap;}
 
 #reportOutput{
   background:rgba(0,0,0,.25);border:1px solid rgba(232,195,132,.3);
@@ -309,6 +310,18 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
   </div>
 
   <hr class="divider">
+
+  <div class="commentary-box" style="border-color:rgba(232,195,132,.6);background:rgba(232,195,132,.07);">
+    <span class="lbl" style="color:var(--gold-bright);">✨ 下書きの一括貼り付け(任意)</span>
+    <div class="hint" style="margin-top:0;margin-bottom:.8rem;">
+      💡 あらかじめ用意した鑑定文を下の書式で貼り付けて「反映する」を押すと、①〜⑥・追加鑑定の欄すべてに自動で振り分けられます。反映後も各欄は自由に編集できます。<br>
+      書式: <code>【四柱推命】</code> <code>【タロット】</code> <code>【推奨日1】日付</code> <code>【推奨日1理由】</code> <code>【推奨日2】</code>〜<code>【推奨日3理由】</code> <code>【動いてはいけない日】日付</code> <code>【動いてはいけない日理由】</code> <code>【総合アドバイス】</code>、追加鑑定は <code>【追加鑑定:恋愛について】</code> のように選択したテーマ名をそのまま使います。
+    </div>
+    <textarea id="bulkPasteInput" style="min-height:140px;" placeholder="【四柱推命】&#10;…&#10;&#10;【タロット】&#10;…&#10;&#10;【推奨日1】2026年8月9日(日・乙卯)&#10;【推奨日1理由】&#10;…"></textarea>
+    <button class="btn-secondary" type="button" onclick="applyBulkPaste()" style="margin-top:.8rem;">反映する</button>
+    <div class="copied-msg" id="bulkPasteMsg" style="display:none;">反映しました ✓ 下の各欄をご確認ください</div>
+  </div>
+
   <h2 style="font-size:1.05rem;margin-bottom:1.4rem;color:var(--gold-bright);">コメントを入力してください</h2>
   <p class="hint" style="margin-bottom:1.4rem;">💡 テキストが多くなりがちなので、LINEで送る際は実際のタロット展開の写真やお守り画像も一緒に添付してください。下の報告書プレビューには、その挿入位置に目印を入れています。</p>
 
@@ -836,6 +849,48 @@ function initCommentaryDraft(d){
   document.getElementById('modeReading').addEventListener('input', e=>{
     if(e.target.tagName==='TEXTAREA' && e.target.id.startsWith('comment_')) saveDraft(d);
   });
+}
+
+// ===== 下書きの一括貼り付け =====
+// 【四柱推命】【タロット】【推奨日1】日付 【推奨日1理由】本文 … のような見出し付きテキストを、
+// 対応する各コメント欄に振り分ける。見出し行の「】」の直後(同じ行)に続く文字列は日付など
+// 一行だけの値として、次の見出しまでの本文はまとめて段落として扱う。
+function parseBulkPaste(text){
+  const re=/【([^】]+)】([^\n]*)\n?([\s\S]*?)(?=【|$)/g;
+  const sections={};
+  let m;
+  while((m=re.exec(text))){
+    sections[m[1].trim()]={inline:m[2].trim(), body:m[3].trim()};
+  }
+  return sections;
+}
+function applyBulkPaste(){
+  const raw=document.getElementById('bulkPasteInput').value;
+  if(!raw.trim())return;
+  const sec=parseBulkPaste(raw);
+  const setVal=(id,val)=>{
+    if(!val)return;
+    const el=document.getElementById(id);
+    if(el){el.value=val; el.dispatchEvent(new Event('input',{bubbles:true}));}
+  };
+  if(sec['四柱推命']) setVal('comment_shishu', sec['四柱推命'].body||sec['四柱推命'].inline);
+  if(sec['タロット']) setVal('comment_tarot', sec['タロット'].body||sec['タロット'].inline);
+  ['1','2','3'].forEach(n=>{
+    if(sec['推奨日'+n]) setVal('comment_date'+n, sec['推奨日'+n].inline);
+    if(sec['推奨日'+n+'理由']) setVal('comment_date'+n+'_why', sec['推奨日'+n+'理由'].body);
+  });
+  if(sec['動いてはいけない日']) setVal('comment_avoid_date', sec['動いてはいけない日'].inline);
+  if(sec['動いてはいけない日理由']) setVal('comment_avoid_why', sec['動いてはいけない日理由'].body);
+  if(sec['総合アドバイス']) setVal('comment_advice', sec['総合アドバイス'].body||sec['総合アドバイス'].inline);
+  if(window._rd){
+    addonLabelsOf(window._rd.data).forEach((label,i)=>{
+      const key='追加鑑定:'+label;
+      if(sec[key]) setVal('comment_addon_'+i, sec[key].body||sec[key].inline);
+    });
+  }
+  const msg=document.getElementById('bulkPasteMsg');
+  msg.style.display='block';
+  setTimeout(()=>{msg.style.display='none';},2500);
 }
 
 function buildReport(){
