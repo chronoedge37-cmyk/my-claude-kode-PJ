@@ -411,7 +411,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
       <li><a href="https://www.emailjs.com" target="_blank" style="color:var(--gold-bright)">emailjs.com</a> にアクセスし、無料アカウントを作成</li>
       <li>「Email Services」→「Add New Service」でGmailなどを連携</li>
       <li>「Email Templates」→「Create New Template」でテンプレートを作成<br>
-        <span style="font-size:.76rem;opacity:.8;">件名：【鑑定申込】{{customer_name}}様<br>
+        <span style="font-size:.76rem;opacity:.8;">件名：【五行庵 宗玄｜鑑定申込】{{customer_name}}様<br>
         本文に以下をそのままコピー貼付：<br>
         お名前：{{customer_name}}<br>
         生年月日：{{customer_birth}}<br>
@@ -640,7 +640,7 @@ function renderCompletion(data, isFreshSubmit){
   // LINEで送るメッセージ本文を組み立てる（長文はLINEの共有リンクが長くなりすぎないよう要約し、全文は鑑定師用リンク先で確認できる）
   const trunc=(s,n)=>s.length>n?s.slice(0,n)+'…(全文はリンク先参照)':s;
   const msg =
-    '【鑑定申込】\n'
+    '【五行庵 宗玄｜鑑定申込】\n'
     + 'お名前：' + name + '\n'
     + '生年月日：' + birthStr + '\n'
     + '性別：' + (gender==='male'?'男性':'女性') + '\n'
