@@ -824,24 +824,45 @@ function initReading(data){
 }
 
 // ===== 鑑定師のコメント下書きを自動保存・復元する =====
-// このページはリロードされるとJSの状態(コメント欄の入力内容)が全て消える。
-// 書きかけの内容が消えて「未入力」に戻ったように見えるのを防ぐため、この鑑定(dの値)ごとに
-// localStorageへ自動保存し、次に同じリンクを開いたときに自動で復元する。
+// このページはリロードされるとJSの状態(コメント欄の入力内容)が全て消える。書きかけの内容が
+// 消えて「未入力」に戻ったように見えるのを防ぐため、この鑑定(dの値)ごとにlocalStorageへ自動
+// 保存し、次に同じリンクを開いたときに自動で復元する。ただしlocalStorageは「その端末・その
+// ブラウザ」の中にしか残らないため、PCで入力した内容をスマホで確認する、といった端末をまたいだ
+// 引き継ぎはできない。そこで入力するたびにURLの draft= パラメータにも同じ内容を書き込み
+// (history.replaceState、お客様側の done= と同じ手法)、アドレスバーのURLをコピーして別の端末で
+// 開けば、その端末にlocalStorageが無くても下書きが復元されるようにしている。
 function draftKeyFor(d){ return 'sougen_draft_'+d; }
-function saveDraft(d){
+function collectDraft(){
   const draft={};
   document.querySelectorAll('#modeReading textarea[id^="comment_"]').forEach(el=>{draft[el.id]=el.value;});
+  return draft;
+}
+function saveDraft(d){
+  const draft=collectDraft();
   try{localStorage.setItem(draftKeyFor(d), JSON.stringify(draft));}catch(e){}
+  const base=location.href.split('?')[0];
+  const params=new URLSearchParams(location.search);
+  params.set('draft', enc(draft));
+  history.replaceState(null,'',base+'?'+params.toString());
+}
+function applyDraft(draft){
+  Object.keys(draft).forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.value=draft[id];
+  });
 }
 function loadDraft(d){
+  // URLに draft= が付いていれば、それが最も新しく共有された下書きなので優先する。
+  // 無ければ、この端末のlocalStorageに残っている下書きを使う。
+  const urlDraft=new URLSearchParams(location.search).get('draft');
+  if(urlDraft){
+    const draft=dec(urlDraft);
+    if(draft){ applyDraft(draft); return; }
+  }
   try{
     const raw=localStorage.getItem(draftKeyFor(d));
     if(!raw)return;
-    const draft=JSON.parse(raw);
-    Object.keys(draft).forEach(id=>{
-      const el=document.getElementById(id);
-      if(el) el.value=draft[id];
-    });
+    applyDraft(JSON.parse(raw));
   }catch(e){}
 }
 function initCommentaryDraft(d){
