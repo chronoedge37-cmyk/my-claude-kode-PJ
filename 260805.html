@@ -311,6 +311,15 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 
   <hr class="divider">
 
+  <div class="commentary-box" style="border-color:rgba(110,207,160,.55);background:rgba(110,207,160,.06);text-align:center;">
+    <span class="lbl" style="color:#6ecfa0;">📋 他の端末で続きを見る</span>
+    <div class="hint" style="margin-top:0;margin-bottom:.8rem;">
+      💡 入力するたびに、このページのURLに下書きの内容が自動で書き込まれます。<strong style="color:#6ecfa0;">別の端末（スマホ⇔パソコンなど）で続きを確認・入力したい時は、LINEで届いた元のリンクではなく、必ずこのボタンでURLをコピーして開いてください。</strong>
+    </div>
+    <button class="btn-secondary" type="button" onclick="copyDraftUrl()">現在の下書き状態のURLをコピー</button>
+    <div class="copied-msg" id="draftUrlCopiedMsg" style="display:none;">コピーしました ✓ このURLを別の端末で開いてください</div>
+  </div>
+
   <div class="commentary-box" style="border-color:rgba(232,195,132,.6);background:rgba(232,195,132,.07);">
     <span class="lbl" style="color:var(--gold-bright);">✨ 下書きの一括貼り付け(任意)</span>
     <div class="hint" style="margin-top:0;margin-bottom:.8rem;">
@@ -912,6 +921,25 @@ function applyBulkPaste(){
   const msg=document.getElementById('bulkPasteMsg');
   msg.style.display='block';
   setTimeout(()=>{msg.style.display='none';},2500);
+}
+
+// 現在のURL(下書きが埋め込まれた最新の状態)をコピーする。
+// LINEで届いた元のリンクをコピーしてしまうと下書きが含まれず「未入力」に見えてしまうため、
+// 必ずこのボタン経由でコピーしてもらうことで、その勘違いを防ぐ。
+function copyDraftUrl(){
+  const url=location.href;
+  const done=()=>{
+    const msg=document.getElementById('draftUrlCopiedMsg');
+    msg.style.display='block';
+    setTimeout(()=>{msg.style.display='none';},3000);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done).catch(()=>{
+      const t=document.createElement('textarea');t.value=url;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);done();
+    });
+  } else {
+    const t=document.createElement('textarea');t.value=url;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);done();
+  }
 }
 
 function buildReport(){
