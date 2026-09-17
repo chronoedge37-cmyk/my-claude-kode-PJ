@@ -896,33 +896,73 @@ function parseBulkPaste(text){
   }
   return sections;
 }
+// 見出しの表記ゆれ(全角コロン、全角数字、「①」等の丸数字、末尾の補足カッコなど)を
+// 吸収するため、キーを正規化したうえで前方一致・部分一致で拾う。貼り付け元(Claude/ChatGPT等の
+// 別セッション)が書式を一字一句守らないことは珍しくなく、完全一致だけだと「貼り付けたのに
+// 反映されない(＝未入力のまま)」という、原因が分かりにくい失敗になっていた。
+function normalizeKey(k){
+  const zenkakuDigits='０１２３４５６７８９',circled='①②③④⑤⑥⑦⑧⑨';
+  return k.replace(/：/g,':')
+    .replace(/[０-９]/g,d=>String(zenkakuDigits.indexOf(d)))
+    .replace(/[①-⑨]/g,d=>String(circled.indexOf(d)+1))
+    .trim();
+}
 function applyBulkPaste(){
   const raw=document.getElementById('bulkPasteInput').value;
   if(!raw.trim())return;
-  const sec=parseBulkPaste(raw);
+  const rawSec=parseBulkPaste(raw);
+  const sec={};
+  Object.keys(rawSec).forEach(k=>{ sec[normalizeKey(k)]=rawSec[k]; });
+  const keys=Object.keys(sec);
+
   const setVal=(id,val)=>{
     if(!val)return;
     const el=document.getElementById(id);
     if(el){el.value=val; el.dispatchEvent(new Event('input',{bubbles:true}));}
   };
-  if(sec['四柱推命']) setVal('comment_shishu', sec['四柱推命'].body||sec['四柱推命'].inline);
-  if(sec['タロット']) setVal('comment_tarot', sec['タロット'].body||sec['タロット'].inline);
+  const found=[],missing=[];
+  const pick=(label,matcher)=>{
+    const key=keys.find(matcher);
+    if(key){found.push(label);return sec[key];}
+    missing.push(label);return null;
+  };
+
+  let s;
+  s=pick('四柱推命',k=>k.startsWith('四柱推命')); if(s) setVal('comment_shishu', s.body||s.inline);
+  s=pick('タロット',k=>k.startsWith('タロット')); if(s) setVal('comment_tarot', s.body||s.inline);
   ['1','2','3'].forEach(n=>{
-    if(sec['推奨日'+n]) setVal('comment_date'+n, sec['推奨日'+n].inline);
-    if(sec['推奨日'+n+'理由']) setVal('comment_date'+n+'_why', sec['推奨日'+n+'理由'].body);
+    const dv=pick('推奨日'+n, k=>k.startsWith('推奨日'+n)&&!k.includes('理由'));
+    if(dv) setVal('comment_date'+n, dv.inline);
+    const wv=pick('推奨日'+n+'理由', k=>k.startsWith('推奨日'+n)&&k.includes('理由'));
+    if(wv) setVal('comment_date'+n+'_why', wv.body||wv.inline);
   });
-  if(sec['動いてはいけない日']) setVal('comment_avoid_date', sec['動いてはいけない日'].inline);
-  if(sec['動いてはいけない日理由']) setVal('comment_avoid_why', sec['動いてはいけない日理由'].body);
-  if(sec['総合アドバイス']) setVal('comment_advice', sec['総合アドバイス'].body||sec['総合アドバイス'].inline);
+  const av=pick('動いてはいけない日', k=>k.startsWith('動いてはいけない日')&&!k.includes('理由'));
+  if(av) setVal('comment_avoid_date', av.inline);
+  const avw=pick('動いてはいけない日理由', k=>k.startsWith('動いてはいけない日')&&k.includes('理由'));
+  if(avw) setVal('comment_avoid_why', avw.body||avw.inline);
+  s=pick('総合アドバイス', k=>k.startsWith('総合アドバイス')); if(s) setVal('comment_advice', s.body||s.inline);
   if(window._rd){
     addonLabelsOf(window._rd.data).forEach((label,i)=>{
-      const key='追加鑑定:'+label;
-      if(sec[key]) setVal('comment_addon_'+i, sec[key].body||sec[key].inline);
+      const a=pick('追加鑑定:'+label, k=>k.startsWith('追加鑑定')&&k.includes(label));
+      if(a) setVal('comment_addon_'+i, a.body||a.inline);
     });
   }
+
+  // 何が拾えて何が拾えなかったかを必ず表示する。無反応(サイレント失敗)のまま
+  // 「反映されていない」と気づけない状態が、この機能をめぐる問い合わせの主因だったため。
   const msg=document.getElementById('bulkPasteMsg');
+  if(!found.length){
+    msg.textContent='⚠️ 貼り付けた文章から項目を認識できませんでした。【四柱推命】【推奨日1】のような書式になっているかご確認ください。';
+    msg.style.color='#e29a8a';
+  } else if(missing.length){
+    msg.textContent='反映しました ✓ ('+found.join('、')+') ※見つからなかった項目: '+missing.join('、');
+    msg.style.color='#e29a8a';
+  } else {
+    msg.textContent='反映しました ✓ 下の各欄をご確認ください';
+    msg.style.color='';
+  }
   msg.style.display='block';
-  setTimeout(()=>{msg.style.display='none';},2500);
+  setTimeout(()=>{msg.style.display='none';},found.length&&!missing.length?2500:6000);
 }
 
 // 現在のURL(下書きが埋め込まれた最新の状態)をコピーする。
