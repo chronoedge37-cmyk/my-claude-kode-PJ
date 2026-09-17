@@ -238,17 +238,18 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 
   <!-- 送信完了画面(この画面の情報はURLに保存されるため、再読み込みやアプリ切替後もブックマーク/戻るで復元できる) -->
   <div id="c_done" style="display:none;margin-top:1.6rem;">
-    <div class="panel" style="text-align:center;">
-      <div class="done-icon">🌙</div>
-      <h2 style="margin-bottom:.4rem;">入力内容を確認しました</h2>
+    <div class="panel" style="text-align:center;border-color:rgba(110,207,160,.6);">
+      <div class="done-icon">✅</div>
+      <h2 style="margin-bottom:.4rem;color:#6ecfa0;">ご依頼を受け付けました</h2>
       <p class="notice" style="text-align:center;margin-bottom:1.6rem;">
-        この画面はURLに保存されています。ページを閉じても、もう一度同じリンクを開けば続きからお支払いいただけます。
+        以下の内容で五行庵 宗玄がお預かりしました。この画面は控えとして、後からも同じリンクで見返せます。
       </p>
       <p class="notice" id="notifyStatus" style="text-align:center;margin-bottom:1.6rem;">
         <span class="spinner"></span>鑑定師への自動送信を確認しています…
       </p>
 
-      <div style="text-align:left;margin-bottom:1.6rem;background:rgba(0,0,0,.2);padding:1rem 1.2rem;">
+      <div style="text-align:left;margin-bottom:1.6rem;background:rgba(110,207,160,.08);border:1px solid rgba(110,207,160,.35);padding:1rem 1.2rem;">
+        <div class="info-row" style="color:#6ecfa0;font-weight:700;margin-bottom:.6rem;">📋 ご依頼内容の控え</div>
         <div class="info-row">お名前: <strong id="done_name"></strong></div>
         <div class="info-row">生年月日: <strong id="done_birth"></strong></div>
         <div class="info-row">始めたいこと: <strong id="done_action"></strong></div>
@@ -657,7 +658,8 @@ function renderCompletion(data, isFreshSubmit){
     + '希望期間：' + trunc(period,40) + '\n'
     + (addonLabels.length?'追加鑑定希望：'+addonLabels.join('、')+'\n':'')
     + '\n▼鑑定師用\n'
-    + readingURL;
+    + readingURL
+    + '\n\n※このメッセージが送信できていれば、ご依頼は受け付けられています。鑑定が整い次第、このトークルームにてご連絡いたします。';
 
   // LINEの送信リンクを生成（宛先選択画面にテキストが入った状態で開く正しい形式）
   const lineUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent(msg);
