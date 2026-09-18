@@ -1234,16 +1234,13 @@ function exportPDF(){
       <div class="pr-brand">五行庵 宗玄</div>
     </div>
   `;
-  // お守り画像がまだ読み込み終わっていない状態でwindow.print()を呼ぶと、
-  // 印刷/PDF保存の内容に画像が反映されないまま(空白のまま)出力されてしまう
-  // (印刷はその瞬間のレンダリング状態をキャプチャするため)。画像の読み込み完了
-  // (失敗した場合も含む)を待ってから印刷を開始する。
-  const imgs=Array.from(document.querySelectorAll('#printArea img'));
-  const waits=imgs.filter(img=>!img.complete).map(img=>new Promise(res=>{
-    img.addEventListener('load',res,{once:true});
-    img.addEventListener('error',res,{once:true});
-  }));
-  Promise.all(waits).then(()=>window.print());
+  // window.print()は必ずクリックハンドラの中で同期的に呼ぶ(お守り画像の読み込み完了を
+  // Promiseで待ってから非同期に呼ぶ形にすると、ブラウザがユーザー操作起因の印刷と
+  // 認識できず、印刷ダイアログ自体が開かなくなる端末がある)。その代わり、お守り画像は
+  // initReading()の時点(命式パネルの#r_workAmuletで)既に同じファイルを読み込み始めて
+  // いるため、practitioner がコメントを書いている間にブラウザキャッシュへ乗っており、
+  // ここで再度同じURLを指定してもキャッシュから即座に描画される。
+  window.print();
 }
 
 // ===== 設定ページ =====
