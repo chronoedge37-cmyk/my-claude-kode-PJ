@@ -123,20 +123,29 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
   @page{margin:12mm;}
 }
 .pr-page{font-family:'Shippori Antique B1',sans-serif;color:#2a1f10;background:#fdfaf2;
-  border:1px solid #dcc48f;padding:14mm 10mm;
+  border:2px solid #dcc48f;padding:16mm 12mm;position:relative;
   -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.pr-corner{position:absolute;width:34px;height:34px;}
+.pr-corner.tl{top:8px;left:8px;}
+.pr-corner.tr{top:8px;right:8px;transform:scaleX(-1);}
+.pr-corner.bl{bottom:8px;left:8px;transform:scaleY(-1);}
+.pr-corner.br{bottom:8px;right:8px;transform:scale(-1,-1);}
 .pr-eyebrow{font-family:'Cinzel',serif;font-size:10px;letter-spacing:.3em;color:#a5793a;text-transform:uppercase;margin-bottom:6px;text-align:center;}
-.pr-title{font-family:'Shippori Mincho B1',serif;font-size:28px;font-weight:800;margin-bottom:4px;color:#1a1206;text-align:center;}
-.pr-rule{display:flex;align-items:center;margin:8px 0 20px;}
-.pr-rule::before,.pr-rule::after{content:'';flex:1;height:1px;background:#cfa15c;}
-.pr-rule span{width:6px;height:6px;background:#cfa15c;transform:rotate(45deg);margin:0 10px;flex-shrink:0;}
-.pr-name{font-size:14px;color:#5c4a30;margin-bottom:18px;text-align:center;}
+.pr-title{font-family:'Shippori Mincho B1',serif;font-size:30px;font-weight:800;margin-bottom:4px;color:#1a1206;text-align:center;}
+.pr-rule{display:flex;align-items:center;margin:10px 0 22px;}
+.pr-rule::before,.pr-rule::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#cfa15c);}
+.pr-rule::after{background:linear-gradient(90deg,#cfa15c,transparent);}
+.pr-rule span{width:7px;height:7px;background:#cfa15c;transform:rotate(45deg);margin:0 12px;flex-shrink:0;box-shadow:0 0 0 3px #fdfaf2,0 0 0 4px rgba(207,161,92,.4);}
+.pr-name{font-size:15px;color:#5c4a30;margin-bottom:18px;text-align:center;}
 .pr-meta{font-size:12px;color:#4a3c28;line-height:1.9;margin-bottom:18px;}
-.pr-pillars-row{display:flex;align-items:flex-start;gap:18px;margin-bottom:8px;}
+.pr-pillars-row{display:flex;align-items:center;gap:22px;margin-bottom:8px;}
 .pr-pillars{display:flex;gap:8px;flex-wrap:wrap;flex:1;}
 .pr-pillar{border:1px solid #cfa15c;text-align:center;padding:8px 10px;font-size:10px;color:#8a6d3e;border-radius:2px;background:#fff;}
 .pr-pillar span{display:block;font-family:'Shippori Mincho B1',serif;font-size:18px;color:#1a1206;margin-top:4px;}
-.pr-amulet{width:76px;height:76px;object-fit:contain;flex-shrink:0;}
+.pr-amulet-frame{width:116px;height:116px;border-radius:50%;flex-shrink:0;
+  border:2px solid #cfa15c;background:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 4px #fdfaf2,0 0 0 5px rgba(207,161,92,.45);}
+.pr-amulet{width:88%;height:88%;object-fit:contain;}
 .pr-radar-wrap{text-align:center;margin:4px 0 22px;}
 .pr-radar-cap{font-size:10px;color:#8a6d3e;letter-spacing:.08em;margin-top:2px;}
 .pr-section{margin-bottom:18px;}
@@ -1072,7 +1081,7 @@ function elementRadarSVG(c){
     return `<text x="${x}" y="${y-3}" text-anchor="middle" font-family="'Shippori Mincho B1',serif" font-size="15" font-weight="700" fill="${EC[i]}">${el}</text>`
       + `<text x="${x}" y="${y+11}" text-anchor="middle" font-family="'Shippori Antique B1',sans-serif" font-size="9" fill="#8a6d3e">${c[i]}</text>`;
   }).join('');
-  return `<svg viewBox="0 0 200 210" width="176" height="185">
+  return `<svg viewBox="0 0 200 210" width="216" height="227">
     <polygon points="${ring(R)}" fill="none" stroke="#cfa15c" stroke-width="1.2" opacity=".55"/>
     <polygon points="${ring(R*0.66)}" fill="none" stroke="#cfa15c" stroke-width="1" opacity=".35"/>
     <polygon points="${ring(R*0.33)}" fill="none" stroke="#cfa15c" stroke-width="1" opacity=".25"/>
@@ -1092,6 +1101,28 @@ function tarotCardSVG(){
     <path d="M30 20 L33 30 L43 30 L35 36 L38 46 L30 40 L22 46 L25 36 L17 30 L27 30 Z" fill="#e8c384"/>
     <line x1="14" y1="62" x2="46" y2="62" stroke="#e8c384" stroke-width="1" opacity=".6"/>
     <line x1="14" y1="68" x2="46" y2="68" stroke="#e8c384" stroke-width="1" opacity=".4"/>
+  </svg>`;
+}
+
+// ===== 四柱推命の装飾アイコン(SVG・太極図) — タロットカードのアイコンと見分けがつくよう、
+// タロットとは別の意匠(陰陽太極)にする =====
+function baziIconSVG(){
+  return `<svg viewBox="0 0 60 60" width="34" height="34" style="flex-shrink:0;">
+    <circle cx="30" cy="30" r="26" fill="#fff" stroke="#cfa15c" stroke-width="2"/>
+    <path d="M30 4 A13 13 0 0 1 30 30 A13 13 0 0 0 30 56 A26 26 0 0 0 30 4 Z" fill="#1a1206"/>
+    <path d="M30 4 A13 13 0 0 0 30 30 A13 13 0 0 1 30 56 A26 26 0 0 1 30 4 Z" fill="#e8c384"/>
+    <circle cx="30" cy="17" r="4.4" fill="#e8c384"/>
+    <circle cx="30" cy="43" r="4.4" fill="#1a1206"/>
+  </svg>`;
+}
+
+// ===== ページ四隅の装飾あしらい(SVG) =====
+function cornerFlourishSVG(pos){
+  return `<svg class="pr-corner ${pos}" viewBox="0 0 40 40">
+    <path d="M4 34 L4 10 Q4 4 10 4 L34 4" fill="none" stroke="#cfa15c" stroke-width="1.4"/>
+    <path d="M4 20 L14 20" stroke="#cfa15c" stroke-width="1" opacity=".6"/>
+    <path d="M20 4 L20 14" stroke="#cfa15c" stroke-width="1" opacity=".6"/>
+    <circle cx="4" cy="4" r="2.8" fill="#cfa15c"/>
   </svg>`;
 }
 
@@ -1123,6 +1154,7 @@ function exportPDF(){
 
   document.getElementById('printArea').innerHTML=`
     <div class="pr-page">
+      ${cornerFlourishSVG('tl')}${cornerFlourishSVG('tr')}${cornerFlourishSVG('bl')}${cornerFlourishSVG('br')}
       <div class="pr-eyebrow">Five Elements &amp; Tarot Counsel</div>
       <h1 class="pr-title">鑑定報告書</h1>
       <div class="pr-rule"><span></span></div>
@@ -1140,7 +1172,9 @@ function exportPDF(){
           <div class="pr-pillar">日柱<span>${pk(bz.day.s,bz.day.b)}</span></div>
           ${bz.hour?`<div class="pr-pillar">時柱<span>${pk(bz.hour.s,bz.hour.b)}</span></div>`:''}
         </div>
-        <img class="pr-amulet" src="assets/amulets/${amuletFile}.png" alt="" onerror="this.remove()">
+        <div class="pr-amulet-frame">
+          <img class="pr-amulet" src="assets/amulets/${amuletFile}.png" alt="" onerror="this.parentElement.style.display='none'">
+        </div>
       </div>
 
       <div class="pr-radar-wrap">
@@ -1148,14 +1182,18 @@ function exportPDF(){
         <div class="pr-radar-cap">日主：${ST[bz.day.s]}(${EL[dm]})</div>
       </div>
 
+      <div class="pr-rule"><span></span></div>
+
       <div class="pr-section">
-        <div class="pr-section-head">${tarotCardSVG()}<h2>① 四柱推命より</h2></div>
+        <div class="pr-section-head">${baziIconSVG()}<h2>① 四柱推命より</h2></div>
         <p>${shishu}</p>
       </div>
       <div class="pr-section">
         <div class="pr-section-head">${tarotCardSVG()}<h2>② タロットより</h2></div>
         <p>${tarot}</p>
       </div>
+
+      <div class="pr-rule"><span></span></div>
 
       <div class="pr-day pr-day-top">
         <span class="pr-day-label">🌟 最もおすすめの日</span>
@@ -1178,12 +1216,16 @@ function exportPDF(){
         <p>${adw}</p>
       </div>
 
+      <div class="pr-rule"><span></span></div>
+
       <div class="pr-section">
         <h2>総合アドバイス</h2>
         <p>${advice}</p>
       </div>
 
       ${addonHtml}
+
+      <div class="pr-rule"><span></span></div>
 
       <div class="pr-closing">
         この鑑定が、${escHtml(data.name)}様の新しい一歩の後押しとなりますように。<br>
@@ -1192,7 +1234,16 @@ function exportPDF(){
       <div class="pr-brand">五行庵 宗玄</div>
     </div>
   `;
-  window.print();
+  // お守り画像がまだ読み込み終わっていない状態でwindow.print()を呼ぶと、
+  // 印刷/PDF保存の内容に画像が反映されないまま(空白のまま)出力されてしまう
+  // (印刷はその瞬間のレンダリング状態をキャプチャするため)。画像の読み込み完了
+  // (失敗した場合も含む)を待ってから印刷を開始する。
+  const imgs=Array.from(document.querySelectorAll('#printArea img'));
+  const waits=imgs.filter(img=>!img.complete).map(img=>new Promise(res=>{
+    img.addEventListener('load',res,{once:true});
+    img.addEventListener('error',res,{once:true});
+  }));
+  Promise.all(waits).then(()=>window.print());
 }
 
 // ===== 設定ページ =====
