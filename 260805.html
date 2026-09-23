@@ -8,6 +8,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Shippori+Mincho+B1:wght@600;700;800&family=Shippori+Antique+B1&display=swap" rel="stylesheet">
 <!-- EmailJS (無料・バックエンド不要) -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<!-- html2canvas + jsPDF: window.print()(ブラウザの印刷ダイアログ)を使わずに実PDFファイルを
+     生成してダウンロードするため。LINEアプリ内蔵ブラウザ等window.print()非対応の環境でも
+     動作させるための変更(詳しくはexportPDF()のコメント参照)。 -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
 :root{
   --ink:#12112c; --gold:#cfa15c; --gold-bright:#e8c384;
@@ -119,14 +124,13 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 .done-icon{font-size:3rem;margin-bottom:1rem;}
 @media(max-width:480px){.field-row{flex-wrap:wrap;}}
 
-/* ===== PDF保存用の印刷レイアウト ===== */
-.print-area{display:none;}
-@media print{
-  body *{visibility:hidden;}
-  .print-area,.print-area *{visibility:visible;}
-  .print-area{display:block;position:absolute;left:0;top:0;width:100%;}
-  @page{margin:12mm;}
-}
+/* ===== PDF保存用レイアウト =====
+   window.print()(ブラウザの印刷機能)は使わず、html2canvas+jsPDFで実際のPDFファイルを
+   生成してダウンロードする方式にしている。LINEアプリ内蔵ブラウザなどwindow.print()に
+   対応していない環境でも、ファイルのダウンロード自体は行えるため、環境を問わず動作する。
+   そのためcanvas化する対象(.pr-page)は画面内に実在させる必要があり、@media printの
+   可視性トリックではなく「画面外に配置して常にレンダリングしておく」方式にしている。 */
+.print-area{position:fixed;left:-9999px;top:0;width:794px;}
 .pr-page{font-family:'Shippori Antique B1',sans-serif;color:#2a1f10;background:#fdfaf2;
   border:2px solid #dcc48f;padding:16mm 12mm;position:relative;
   -webkit-print-color-adjust:exact;print-color-adjust:exact;}
@@ -216,13 +220,19 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
   <div class="panel">
     <h2>② 鑑定内容</h2>
     <div class="field">
-      <label>新しく「始めたいこと」<span class="req">*</span></label>
+      <label>ジャンルを選択</label>
+      <select id="c_action_preset"><option value="">選択してください(任意)</option></select>
+    </div>
+    <div class="field">
+      <label>新しく「始めたいこと」を具体的に<span class="req">*</span></label>
       <textarea id="c_action" placeholder="例：転職活動を始めたい。今の職場に3年勤めていて待遇に不満はないが、成長できている実感がなく、異業種への転職も含めて動き出すか迷っている。"></textarea>
-      <div class="hint">💡 一言だけでなく、背景や状況もあわせて書いていただくと、より具体的な鑑定が可能になります。</div>
+      <div class="hint">💡 上でジャンルを選ぶと書き出しを自動で入れます。背景や状況もあわせて書いていただくと、より具体的な鑑定が可能になります。</div>
     </div>
     <div class="field">
       <label>いつ頃までに始めたいか<span class="req">*</span></label>
-      <input type="text" id="c_period" placeholder="例：8月中、3ヶ月以内など">
+      <select id="c_period_preset"></select>
+      <input type="text" id="c_period_custom" style="display:none;margin-top:.6rem;" placeholder="例：2027年4月まで、2027年度中になど">
+      <div class="hint">💡「○年中」は西暦のその年のうち、という意味です。年度(4月始まり)など細かく指定したい場合は「日付や年度を指定する」をお選びください。</div>
     </div>
     <div class="field">
       <label>今の状況や気になっていること(任意)</label>
@@ -407,7 +417,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
   <div id="reportOutput"></div>
   <button class="btn-primary" onclick="buildReport()" style="margin-top:1rem;">報告書を生成する</button>
   <button class="btn-secondary" onclick="copyReport()">クリップボードにコピー</button>
-  <button class="btn-secondary" onclick="exportPDF()">PDFで保存</button>
+  <button class="btn-secondary" id="exportPdfBtn" onclick="exportPDF()">PDFで保存</button>
   <div class="copied-msg" id="copiedMsg">コピーしました ✓</div>
 </div>
 
@@ -616,10 +626,57 @@ function initForm(){
   hs.value='';
   for(let mi=0;mi<60;mi+=5){const o=document.createElement('option');o.value=mi;o.textContent=String(mi).padStart(2,'0')+'分';mns.appendChild(o);}
   mns.value='';
+
+  // ①「始めたいこと」のジャンル選択(プルダウン)。選ぶと書き出し文を自動でテキスト欄に入れ、
+  // タイピングの手間を減らす。既に何か書かれている場合は上書きしない(入力済みの内容を消さない)。
+  const actionPreset=document.getElementById('c_action_preset'), actionBox=document.getElementById('c_action');
+  Object.keys(ACTION_PRESETS).forEach(label=>{
+    const o=document.createElement('option');o.value=label;o.textContent=label;actionPreset.appendChild(o);
+  });
+  const otherOpt=document.createElement('option');otherOpt.value='__other__';otherOpt.textContent='その他(下の欄に自由に入力)';actionPreset.appendChild(otherOpt);
+  actionPreset.addEventListener('change',()=>{
+    const v=actionPreset.value;
+    if(v && v!=='__other__' && !actionBox.value.trim()) actionBox.value=ACTION_PRESETS[v];
+    actionBox.focus();
+  });
+
+  // ②「いつ頃までに始めたいか」のプルダウン化。以前は自由記述だったため、例えば「2027年」が
+  // 「2027年までに(早めに動く)」なのか「2027年になってから」なのか、書いた本人以外には
+  // 判断できず、鑑定師側で日付選定の解釈がずれる原因になっていた。選択式にして曖昧さを無くす。
+  const periodPreset=document.getElementById('c_period_preset'), periodCustom=document.getElementById('c_period_custom');
+  const cy=new Date().getFullYear();
+  const periodOptions=[
+    ['1ヶ月以内','1ヶ月以内'],
+    ['3ヶ月以内','3ヶ月以内'],
+    ['半年以内','半年以内'],
+    [cy+'年中','今年中('+cy+'年中)'],
+    [(cy+1)+'年中','来年中('+(cy+1)+'年中)'],
+    ['特に期限はない','特に期限はない'],
+    ['__custom__','日付や年度を指定する(自由入力)']
+  ];
+  periodOptions.forEach(([val,label])=>{
+    const o=document.createElement('option');o.value=val;o.textContent=label;periodPreset.appendChild(o);
+  });
+  periodPreset.value='3ヶ月以内';
+  periodPreset.addEventListener('change',()=>{
+    const isCustom=periodPreset.value==='__custom__';
+    periodCustom.style.display=isCustom?'block':'none';
+    if(isCustom) periodCustom.focus();
+  });
 }
 
 // 追加鑑定(+¥500)の選択肢。表示名と、報告書・お客様情報パネルで使うラベルをここで一元管理する。
 const ADDON_LABELS = {renai:'恋愛について', aisho:'相性について', shoubu:'勝負運について'};
+
+// ①「始めたいこと」ジャンル選択プルダウンの選択肢と、選んだ時にテキスト欄へ入れる書き出し文。
+const ACTION_PRESETS = {
+  '転職・キャリアチェンジ':'転職・キャリアチェンジをしたい。',
+  '起業・独立':'起業・独立をしたい。',
+  '恋愛・結婚':'恋愛・結婚について動きたい。',
+  '引っ越し・住み替え':'引っ越し・住み替えをしたい。',
+  '資格取得・受験':'資格取得・受験に向けて動きたい。',
+  '大きな買い物・契約':'大きな買い物・契約をしたい。'
+};
 const STRIPE_BASE_URL = 'https://buy.stripe.com/bJecN43TM0qWa2q5hV93y02';
 const STRIPE_ADDON_URL = 'https://buy.stripe.com/fZu28q9e6ddI7UieSv93y03';
 
@@ -763,7 +820,8 @@ function submitCustomer(){
   const mv=document.getElementById('c_min').value;
   const gender=document.querySelector('input[name=c_gender]:checked').value;
   const action=document.getElementById('c_action').value.trim();
-  const period=document.getElementById('c_period').value.trim();
+  const periodPresetVal=document.getElementById('c_period_preset').value;
+  const period=periodPresetVal==='__custom__'?document.getElementById('c_period_custom').value.trim():periodPresetVal;
   const detail=document.getElementById('c_detail').value.trim();
   const addons=Array.from(document.querySelectorAll('input[name=c_addon]:checked')).map(el=>el.value);
   const addonOther=document.getElementById('c_addon_other').value.trim();
@@ -1172,9 +1230,17 @@ function cornerFlourishSVG(pos){
   </svg>`;
 }
 
-// ===== PDF保存(ブラウザ印刷を利用) =====
-function exportPDF(){
+// ===== PDF保存 =====
+// window.print()(ブラウザの印刷ダイアログ)には依存しない。LINEアプリ内蔵ブラウザ等では
+// window.print()自体が無反応になる端末があり、「印刷ができません」という問い合わせの
+// 直接の原因になっていた。html2canvasで報告書をキャンバス画像化し、jsPDFでPDFファイルに
+// 組み立てて直接ダウンロードする方式にすることで、印刷ダイアログという不確実な機能に
+// 頼らずに済む(ファイルダウンロード自体はLINE内蔵ブラウザでも行える)。
+async function exportPDF(){
   if(!window._rd)return;
+  const btn=document.getElementById('exportPdfBtn');
+  const origText=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='PDFを生成中…';}
   const {data,bz,c}=window._rd;
   const dm=SE[bz.day.s];
   const amuletFile=amuletFileFor(c);
@@ -1280,13 +1346,41 @@ function exportPDF(){
       <div class="pr-brand">五行庵 宗玄</div>
     </div>
   `;
-  // window.print()は必ずクリックハンドラの中で同期的に呼ぶ(お守り画像の読み込み完了を
-  // Promiseで待ってから非同期に呼ぶ形にすると、ブラウザがユーザー操作起因の印刷と
-  // 認識できず、印刷ダイアログ自体が開かなくなる端末がある)。その代わり、お守り画像は
-  // initReading()の時点(命式パネルの#r_workAmuletで)既に同じファイルを読み込み始めて
-  // いるため、practitioner がコメントを書いている間にブラウザキャッシュへ乗っており、
-  // ここで再度同じURLを指定してもキャッシュから即座に描画される。
-  window.print();
+
+  try{
+    const target=document.querySelector('#printArea .pr-page');
+    const canvas=await html2canvas(target,{scale:2,backgroundColor:'#fdfaf2',useCORS:true});
+    const imgData=canvas.toDataURL('image/jpeg',0.92);
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({unit:'mm',format:'a4'});
+    const pageW=pdf.internal.pageSize.getWidth();
+    const pageH=pdf.internal.pageSize.getHeight();
+    const imgW=pageW;
+    const imgH=canvas.height*imgW/canvas.width;
+    let heightLeft=imgH, position=0;
+    pdf.addImage(imgData,'JPEG',0,position,imgW,imgH);
+    heightLeft-=pageH;
+    while(heightLeft>0){
+      position=heightLeft-imgH;
+      pdf.addPage();
+      pdf.addImage(imgData,'JPEG',0,position,imgW,imgH);
+      heightLeft-=pageH;
+    }
+    // ダウンロードファイル名はASCII文字のみにする。<a download>属性は非ASCII(日本語)の
+    // ファイル名だと一部の環境で無視され、拡張子(.pdf)ごと消えて「download」という
+    // 名前無し・種類不明のファイルとして保存されてしまうことがある(実機検証で確認済み)。
+    // お客様名は報告書本文には表示されるので、ファイル名側は常に安全なASCIIのみにする。
+    const asciiSlug=(s)=>String(s).replace(/[^A-Za-z0-9_-]/g,'');
+    const nameSlug=asciiSlug(data.name);
+    const now=new Date();
+    const ymd=now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0');
+    pdf.save('kantei_houkokusho'+(nameSlug?'_'+nameSlug:'')+'_'+ymd+'.pdf');
+  }catch(e){
+    console.error('PDF生成失敗:',e);
+    alert('PDFの生成に失敗しました。お手数ですが再度お試しいただくか、PCのブラウザでお試しください。');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=origText;}
+  }
 }
 
 // ===== 設定ページ =====
