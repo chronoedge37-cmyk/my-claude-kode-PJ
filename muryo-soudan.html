@@ -92,6 +92,21 @@ select:focus,input:focus{outline:none;border-color:var(--gold-bright);}
 .sougen-avatar{width:34px;height:34px;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:.5rem;
   background:radial-gradient(circle at 38% 34%,#fff6dd 0%,var(--gold-bright) 42%,var(--gold) 78%,#a5793a 100%);
   box-shadow:0 0 14px rgba(232,195,132,.4);object-fit:cover;}
+
+/* ===== 無料→有料の橋渡し(ロック演出・比較表) ===== */
+.locked-teaser{background:rgba(0,0,0,.35);border:1px dashed rgba(232,195,132,.5);border-radius:2px;
+  padding:1.2rem 1rem;margin-bottom:1.6rem;text-align:left;}
+.locked-row{display:flex;align-items:center;gap:.6rem;font-size:.86rem;color:var(--ivory);padding:.4rem 0;}
+.locked-row .lock{font-size:.9rem;opacity:.8;flex-shrink:0;}
+.locked-row .blur{filter:blur(4px);user-select:none;opacity:.75;}
+.locked-cap{font-size:.7rem;color:var(--gold-bright);text-align:center;margin-top:.6rem;letter-spacing:.03em;}
+
+.compare-table{width:100%;border-collapse:collapse;margin-bottom:1.6rem;font-size:.78rem;}
+.compare-table th,.compare-table td{padding:.55rem .4rem;text-align:center;border-bottom:1px solid rgba(232,195,132,.18);}
+.compare-table td:first-child,.compare-table th:first-child{text-align:left;color:var(--ivory);}
+.compare-table th{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.06em;color:var(--lavender);text-transform:uppercase;font-weight:600;}
+.compare-table th.hi,.compare-table td.hi{color:var(--gold-bright);font-weight:700;background:rgba(232,195,132,.06);}
+.compare-table td.dim{color:var(--lavender);opacity:.45;}
 </style>
 </head>
 <body>
@@ -155,15 +170,34 @@ select:focus,input:focus{outline:none;border-color:var(--gold-bright);}
 
     <div class="cta-card">
       <img class="amulet-img" id="r_amulet" alt="お守り" onerror="this.remove()">
-      <h3>「いつ動くべきか」は、ここから先が本題です</h3>
+      <h3 id="r_ctaTitle">「いつ動くべきか」は、ここから先が本題です</h3>
       <p>
         ここまでは、あなたが生まれ持った運気の"大枠"です。
         本鑑定では、この命式をもとにタロットを展開し、
         <strong style="color:var(--gold-bright)">「この日に動くと良い」という具体的な吉日</strong>までお伝えします。
       </p>
+
+      <div class="locked-teaser">
+        <div class="locked-row"><span class="lock">🔒</span>第1候補　<span class="blur">2026年◯月◯日</span></div>
+        <div class="locked-row"><span class="lock">🔒</span>第2候補　<span class="blur">2026年◯月◯日</span></div>
+        <div class="locked-row"><span class="lock">🔒</span>第3候補　<span class="blur">2026年◯月◯日</span></div>
+        <div class="locked-cap">↑ あなたが動くべき3つの日(例) — 本鑑定で実際の日付が判明します</div>
+      </div>
+
       <p>
         さらに、<strong style="color:var(--gold-bright)">「動いてはいけない日」</strong>もあわせてお伝えし、避けるべきタイミングとその過ごし方まで具体的にご案内します。
       </p>
+
+      <table class="compare-table">
+        <tr><th></th><th>無料相談</th><th class="hi">本鑑定 ¥2,000</th></tr>
+        <tr><td>命式・五行バランス診断</td><td>◯</td><td class="hi">◯</td></tr>
+        <tr><td>タロットによる吉日選定</td><td class="dim">—</td><td class="hi">◯</td></tr>
+        <tr><td>動くべき日(3日・優先順位付き)</td><td class="dim">—</td><td class="hi">◯</td></tr>
+        <tr><td>動いてはいけない日</td><td class="dim">—</td><td class="hi">◯</td></tr>
+        <tr><td>あなただけの総合アドバイス</td><td class="dim">—</td><td class="hi">◯</td></tr>
+        <tr><td>PDF鑑定書</td><td class="dim">—</td><td class="hi">◯</td></tr>
+      </table>
+
       <a class="btn-primary" id="ctaApply" href="260805.html?mode=customer">本鑑定に申し込む</a>
     </div>
   </div>
@@ -308,6 +342,8 @@ function runDiagnosis(){
      命式全体では「${EL[maxI]}」の気が最も強く出ており、「${EL[minI]}」の気がやや少なめの構成です。${strengthText}`;
 
   document.getElementById('r_title').textContent=`${Y}年${M}月${D}日生まれの命式`;
+  // CTAの見出しを診断結果(日主)で個別化し、「自分だけの結果」という実感を持ってもらう
+  document.getElementById('r_ctaTitle').textContent=`日主「${ST[bz.day.s]}(${dmEl})」のあなたが、動くべき日`;
 
   document.getElementById('formArea').style.display='none';
   document.getElementById('result').style.display='block';
