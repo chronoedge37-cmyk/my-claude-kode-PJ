@@ -63,6 +63,11 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--gold-bri
 .notice.warn{color:#e29a8a;}
 .notice.ok{color:#6ecfa0;}
 
+/* ===== LINEアプリ内ブラウザ警告(常時表示・自動消滅しない) ===== */
+.line-warn{background:rgba(232,115,92,.14);border:2px solid #e29a8a;padding:1rem 1.2rem;margin-bottom:1.6rem;}
+.line-warn strong{color:#e29a8a;}
+.line-warn p{font-size:.84rem;line-height:1.85;color:var(--ivory);margin-bottom:.8rem;}
+
 .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:1rem;}
 .pillar{background:rgba(0,0,0,.3);border:1px solid rgba(232,195,132,.3);text-align:center;padding:.8rem .3rem;}
 .pillar .role{font-family:'Cinzel',serif;font-size:.55rem;letter-spacing:.1em;color:var(--gold-bright);text-transform:uppercase;margin-bottom:.4rem;}
@@ -172,6 +177,11 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 
 <!-- ===================== MODE A: お客様入力フォーム ===================== -->
 <div id="modeCustomer" class="wrap" style="display:none">
+  <div id="lineWarnCustomer" class="line-warn" style="display:none;">
+    <p>⚠️ <strong>現在LINEアプリ内のブラウザで開いています。</strong>このまま送信すると、鑑定師用ページが正しく動作しない場合があります。右上の「…」メニューから「他のブラウザで開く」を選ぶか、下のボタンでURLをコピーしてSafari/Chromeに貼り付けて開き直してください。</p>
+    <button class="btn-secondary" type="button" onclick="copyCurrentUrlForExternalBrowser('lineWarnCopiedCustomer')">このページのURLをコピー</button>
+    <div class="copied-msg" id="lineWarnCopiedCustomer" style="display:none;">コピーしました ✓ Safari/Chromeに貼り付けて開いてください</div>
+  </div>
   <div class="eyebrow">Five Elements · 開始日鑑定サロン</div>
   <h1 class="page-title">鑑定お申し込みフォーム</h1>
   <p class="page-sub">
@@ -283,6 +293,11 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 
 <!-- ===================== MODE B: 鑑定師専用 ===================== -->
 <div id="modeReading" class="wrap" style="display:none">
+  <div id="lineWarnReading" class="line-warn" style="display:none;">
+    <p>⚠️ <strong>現在LINEアプリ内のブラウザで開いています。</strong>この状態では「印刷/PDF保存」「下書きの自動保存」が正しく動作しません。右上の「…」メニューから「他のブラウザで開く」を選ぶか、下のボタンでURLをコピーしてSafari/Chromeに貼り付けて開き直してください。</p>
+    <button class="btn-secondary" type="button" onclick="copyCurrentUrlForExternalBrowser('lineWarnCopiedReading')">このページのURLをコピー</button>
+    <div class="copied-msg" id="lineWarnCopiedReading" style="display:none;">コピーしました ✓ Safari/Chromeに貼り付けて開いてください</div>
+  </div>
   <div class="eyebrow">Five Elements · 鑑定師専用ページ</div>
   <h1 class="page-title">計算結果 &amp; コメント入力</h1>
 
@@ -667,7 +682,9 @@ function renderCompletion(data, isFreshSubmit){
     + '希望期間：' + trunc(period,40) + '\n'
     + (addonLabels.length?'追加鑑定希望：'+addonLabels.join('、')+'\n':'')
     + '\n▼鑑定師用\n'
-    + readingURL
+    // LINEチャットからタップした時に、印刷や下書き保存が動作しないLINE内蔵ブラウザではなく
+    // 端末の既定ブラウザ(Safari/Chrome)で開かれるよう openExternalBrowser=1 を付けておく。
+    + withExternalBrowserHint(readingURL)
     + '\n\n※このメッセージが送信できていれば、ご依頼は受け付けられています。鑑定が整い次第、このトークルームにてご連絡いたします。';
 
   // LINEの送信リンクを生成（宛先選択画面にテキストが入った状態で開く正しい形式）
@@ -977,20 +994,49 @@ function applyBulkPaste(){
 // 現在のURL(下書きが埋め込まれた最新の状態)をコピーする。
 // LINEで届いた元のリンクをコピーしてしまうと下書きが含まれず「未入力」に見えてしまうため、
 // 必ずこのボタン経由でコピーしてもらうことで、その勘違いを防ぐ。
+function copyTextToClipboard(text, onDone){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(onDone).catch(()=>{
+      const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);onDone();
+    });
+  } else {
+    const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);onDone();
+  }
+}
 function copyDraftUrl(){
-  const url=location.href;
-  const done=()=>{
+  // このURLはLINEで自分宛てに送って別端末で開く、という使い方を想定しているため、
+  // LINE内蔵ブラウザを経由しないよう openExternalBrowser=1 を付けてコピーする。
+  copyTextToClipboard(withExternalBrowserHint(location.href), ()=>{
     const msg=document.getElementById('draftUrlCopiedMsg');
     msg.style.display='block';
     setTimeout(()=>{msg.style.display='none';},3000);
-  };
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(url).then(done).catch(()=>{
-      const t=document.createElement('textarea');t.value=url;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);done();
-    });
-  } else {
-    const t=document.createElement('textarea');t.value=url;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);done();
-  }
+  });
+}
+
+// ===== LINEアプリ内ブラウザの検出と警告 =====
+// LINEの内蔵ブラウザは印刷(window.print())に対応しておらず、保存領域(localStorage)も
+// 不安定なため、「印刷が反応しない」「下書きが未入力に戻る」という問い合わせの大半はこれが原因。
+// 判定は任意設定ではなく常時実行し、該当すれば必ず警告を表示する(「任意」「場合による」を無くす)。
+function isLineInAppBrowser(){
+  return /\bLine\//i.test(navigator.userAgent);
+}
+function showLineBrowserWarnIfNeeded(elId){
+  if(!isLineInAppBrowser())return;
+  const el=document.getElementById(elId);
+  if(el) el.style.display='block';
+}
+function copyCurrentUrlForExternalBrowser(msgId){
+  copyTextToClipboard(location.href, ()=>{
+    const msg=document.getElementById(msgId);
+    if(msg){msg.style.display='block';setTimeout(()=>{msg.style.display='none';},4000);}
+  });
+}
+// LINEチャット上のリンクは openExternalBrowser=1 を付けておくと、LINE側がタップ時に
+// 自動でSafari/Chrome(既定のブラウザ)を開いてくれる(LINE公式の挙動)。これにより、
+// 鑑定師用URLをLINEで受け取ってタップするだけで、印刷や下書き保存が動作しない内蔵ブラウザを
+// そもそも経由しなくなる。
+function withExternalBrowserHint(url){
+  return url + (url.includes('?') ? '&' : '?') + 'openExternalBrowser=1';
 }
 
 function buildReport(){
@@ -1271,6 +1317,7 @@ function saveSetup(){
   const p=new URLSearchParams(location.search),mode=p.get('mode'),d=p.get('d'),done=p.get('done');
   if(!mode||mode==='customer'){
     document.getElementById('modeCustomer').style.display='block';initForm();applyPrefill();
+    showLineBrowserWarnIfNeeded('lineWarnCustomer');
     if(done){
       const data=dec(done);
       if(data) renderCompletion(data,false);
@@ -1280,6 +1327,7 @@ function saveSetup(){
     if(!data){document.getElementById('modeError').style.display='block';return;}
     document.getElementById('modeReading').style.display='block';initReading(data);
     initCommentaryDraft(d);
+    showLineBrowserWarnIfNeeded('lineWarnReading');
   } else if(mode==='setup'){
     document.getElementById('modeSetup').style.display='block';initSetup();
   } else {
