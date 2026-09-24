@@ -356,9 +356,16 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
   </div>
 
   <div class="commentary-box" style="border-color:rgba(232,195,132,.6);background:rgba(232,195,132,.07);">
-    <span class="lbl" style="color:var(--gold-bright);">✨ 下書きの一括貼り付け(任意)</span>
+    <span class="lbl" style="color:var(--gold-bright);">✨ 鑑定文の一括貼り付け(URLではありません)</span>
+    <div class="notice warn" style="margin:0 0 .8rem;font-weight:700;">
+      ⚠️ ここに貼るのは「URL(リンク)」ではありません。<br>
+      下の①〜③の手順で作った「鑑定文(【四柱推命】から始まる文章)」を貼ってください。URLを貼っても何も反映されません。
+    </div>
     <div class="hint" style="margin-top:0;margin-bottom:.8rem;">
-      💡 あらかじめ用意した鑑定文を下の書式で貼り付けて「反映する」を押すと、①〜⑥・追加鑑定の欄すべてに自動で振り分けられます。反映後も各欄は自由に編集できます。<br>
+      <strong style="color:var(--gold-bright);">①</strong> このページのURL(アドレスバーの内容)をコピーする<br>
+      <strong style="color:var(--gold-bright);">②</strong> ChatGPTやClaudeなどのAIチャットにそのURLを貼り、「この内容で鑑定文を書いて」と依頼する<br>
+      <strong style="color:var(--gold-bright);">③</strong> AIが書いた回答(文章)をコピーして、下の欄に貼り付けて「反映する」を押す<br><br>
+      💡 ③で貼るのはAIが書いた「文章」で、①でコピーした「URL」ではありません。書式が合っていれば①〜⑥・追加鑑定の欄すべてに自動で振り分けられます。反映後も各欄は自由に編集できます。<br>
       書式: <code>【四柱推命】</code> <code>【タロット】</code> <code>【推奨日1】日付</code> <code>【推奨日1理由】</code> <code>【推奨日2】</code>〜<code>【推奨日3理由】</code> <code>【動いてはいけない日】日付</code> <code>【動いてはいけない日理由】</code> <code>【総合アドバイス】</code>、追加鑑定は <code>【追加鑑定:恋愛について】</code> のように選択したテーマ名をそのまま使います。
     </div>
     <textarea id="bulkPasteInput" style="min-height:140px;" placeholder="【四柱推命】&#10;…&#10;&#10;【タロット】&#10;…&#10;&#10;【推奨日1】2026年8月9日(日・乙卯)&#10;【推奨日1理由】&#10;…"></textarea>
@@ -994,6 +1001,21 @@ function normalizeKey(k){
 function applyBulkPaste(){
   const raw=document.getElementById('bulkPasteInput').value;
   if(!raw.trim())return;
+
+  // 実際に繰り返し起きていた勘違い: ここに「鑑定師用URL」自体を貼ってしまうケース。
+  // URLには【四柱推命】等の見出しが一切無いため0件ヒットになるのは仕様通りだが、
+  // 汎用の「見つかりませんでした」だけでは原因(URLを貼ってしまっている事)が伝わらず、
+  // かつメッセージが数秒で消えるため見落とされていた。URLらしき貼り付けは特別に検知し、
+  // 消えない・具体的な説明で案内する。
+  const trimmed=raw.trim();
+  if(/^https?:\/\/\S+$/.test(trimmed) && !trimmed.includes('【')){
+    const msg=document.getElementById('bulkPasteMsg');
+    msg.innerHTML='⚠️ <strong>これはURL(リンク)です。ここにはURLではなく、AIが書いた「鑑定文」を貼ってください。</strong><br>手順: ①このページのURLをコピー → ②ChatGPT/ClaudeにそのURLを貼って鑑定文を依頼 → ③AIの回答(文章)をコピーしてここに貼り直す。';
+    msg.style.color='#e29a8a';
+    msg.style.display='block';
+    return;
+  }
+
   const rawSec=parseBulkPaste(raw);
   const sec={};
   Object.keys(rawSec).forEach(k=>{ sec[normalizeKey(k)]=rawSec[k]; });
@@ -1046,7 +1068,11 @@ function applyBulkPaste(){
     msg.style.color='';
   }
   msg.style.display='block';
-  setTimeout(()=>{msg.style.display='none';},found.length&&!missing.length?2500:6000);
+  // 成功メッセージだけ数秒で消す。失敗/一部欠落メッセージは、読む前に消えて
+  // 「一瞬だけ出て見えなかった」という事態を防ぐため自動では消さない。
+  if(found.length && !missing.length){
+    setTimeout(()=>{msg.style.display='none';},2500);
+  }
 }
 
 // 現在のURL(下書きが埋め込まれた最新の状態)をコピーする。
