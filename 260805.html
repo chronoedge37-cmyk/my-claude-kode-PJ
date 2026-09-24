@@ -179,6 +179,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 .pr-section h2{font-family:'Shippori Mincho B1',serif;font-size:15px;color:#a5793a;margin:0;}
 .pr-section p{font-size:12.5px;line-height:2.05;color:#2a1f10;margin-bottom:.9em;}
 .pr-section p:last-child{margin-bottom:0;}
+.pr-illustration{text-align:center;margin:2px 0 12px;}
 .pr-day{border:1px solid #e8d9b8;border-radius:8px;padding:14px 18px;margin-bottom:14px;background:#fff;
   display:flex;gap:14px;align-items:flex-start;box-shadow:0 2px 8px rgba(166,121,58,.08);}
 .pr-day-icon{width:36px;height:36px;flex-shrink:0;margin-top:2px;}
@@ -1292,6 +1293,46 @@ function sealIconSVG(){
   </svg>`;
 }
 
+// ===== ②タロットの図表: 3枚のスプレッド(現状・課題・行く先)を大きめのカード挿絵で見せる =====
+// 個々のカード名は鑑定師の自由記述の中にあるため機械的には拾えないが、「3枚展開した」
+// という構図そのものを図表として見せることで、テキストだけの説明より一目で伝わるようにする。
+function tarotSpreadSVG(){
+  const glyphs=[
+    `<circle cx="30" cy="34" r="11" fill="none" stroke="#e8c384" stroke-width="1.6"/><path d="M30 24 A10 10 0 0 0 30 44 A7 7 0 0 1 30 24 Z" fill="#e8c384"/>`,
+    `<path d="M30 22 L34 32 L44 33 L36 40 L38 50 L30 44 L22 50 L24 40 L16 33 L26 32 Z" fill="#e8c384" opacity=".9"/>`,
+    `<circle cx="30" cy="34" r="11" fill="#e8c384"/>${[0,60,120,180,240,300].map(a=>{const r1=13,r2=18,rad=a*Math.PI/180;const x1=30+Math.cos(rad)*r1,y1=34+Math.sin(rad)*r1,x2=30+Math.cos(rad)*r2,y2=34+Math.sin(rad)*r2;return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#e8c384" stroke-width="2" stroke-linecap="round"/>`;}).join('')}`
+  ];
+  const labels=['現状','課題','行く先'];
+  const card=(i,rot)=>`
+    <g transform="rotate(${rot} ${70+i*90} 90)">
+      <rect x="${40+i*90}" y="20" width="60" height="90" rx="6" fill="#1a1206" stroke="#cfa15c" stroke-width="2"/>
+      <rect x="${45+i*90}" y="25" width="50" height="80" rx="3" fill="none" stroke="#e8c384" stroke-width="1" opacity=".7"/>
+      <g transform="translate(${i*90} 0)">${glyphs[i]}</g>
+    </g>
+    <text x="${70+i*90}" y="130" text-anchor="middle" font-family="'Shippori Mincho B1',serif" font-size="13" fill="#8a6d3e">${labels[i]}</text>`;
+  return `<svg viewBox="0 0 280 140" width="360" height="180">
+    ${card(0,-6)}${card(1,0)}${card(2,6)}
+  </svg>`;
+}
+
+// ===== ①四柱推命の図表: 陰陽太極を中心に据えた大きめの挿絵(命式全体のバランスを象徴) =====
+function baziDiagramSVG(){
+  const ringMarks=[0,1,2,3,4,5,6,7].map(i=>{
+    const a=i*45*Math.PI/180, r1=58, r2=68;
+    const x1=80+Math.cos(a)*r1, y1=80+Math.sin(a)*r1, x2=80+Math.cos(a)*r2, y2=80+Math.sin(a)*r2;
+    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#a5793a" stroke-width="2.2" opacity=".7"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 160 160" width="220" height="220">
+    <circle cx="80" cy="80" r="72" fill="none" stroke="#cfa15c" stroke-width="1.4" opacity=".5"/>
+    ${ringMarks}
+    <circle cx="80" cy="80" r="34" fill="#fff" stroke="#cfa15c" stroke-width="2"/>
+    <path d="M80 46 A17 17 0 0 1 80 80 A17 17 0 0 0 80 114 A34 34 0 0 0 80 46 Z" fill="#1a1206"/>
+    <path d="M80 46 A17 17 0 0 0 80 80 A17 17 0 0 1 80 114 A34 34 0 0 1 80 46 Z" fill="#e8c384"/>
+    <circle cx="80" cy="63" r="5.6" fill="#e8c384"/>
+    <circle cx="80" cy="97" r="5.6" fill="#1a1206"/>
+  </svg>`;
+}
+
 // ===== 長文を読みやすい段落に分ける =====
 // 依頼者側の入力欄は1つのtextareaなので、鑑定師が改行を入れなくても句点(。)ごとに
 // 数文単位で段落を分け、行いっぱいに詰まった文章にならないようにする。
@@ -1418,10 +1459,12 @@ async function exportPDF(){
 
       <div class="pr-section">
         <div class="pr-section-head"><div class="pr-icon-badge">${baziIconSVG()}</div><h2>① 四柱推命より</h2></div>
+        <div class="pr-illustration">${baziDiagramSVG()}</div>
         ${shishu}
       </div>
       <div class="pr-section">
         <div class="pr-section-head"><div class="pr-icon-badge">${tarotCardSVG()}</div><h2>② タロットより</h2></div>
+        <div class="pr-illustration">${tarotSpreadSVG()}</div>
         ${tarot}
       </div>
 
