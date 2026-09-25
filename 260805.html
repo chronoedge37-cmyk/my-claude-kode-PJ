@@ -1002,8 +1002,12 @@ function initCommentaryDraft(d){
 // 【四柱推命】【タロット】【推奨日1】日付 【推奨日1理由】本文 … のような見出し付きテキストを、
 // 対応する各コメント欄に振り分ける。見出し行の「】」の直後(同じ行)に続く文字列は日付など
 // 一行だけの値として、次の見出しまでの本文はまとめて段落として扱う。
+// 見出しの括弧は【】(黒塗り隅付き括弧)を基本形式として案内しているが、〖〗(白抜き隅付き括弧)や
+// 〔〕(亀甲括弧)は見た目がよく似ており、別のAIチャットが生成した文章でこれらが使われて
+// 1件も見出しとして認識されない、という実例が実際にあったため、両方とも見出し記号として
+// 受け付ける(「」は通常の引用符としても文中で多用されるため、誤検出を避けてここには含めない)。
 function parseBulkPaste(text){
-  const re=/【([^】]+)】([^\n]*)\n?([\s\S]*?)(?=【|$)/g;
+  const re=/[【〖〔]([^】〗〕]+)[】〗〕]([^\n]*)\n?([\s\S]*?)(?=[【〖〔]|$)/g;
   const sections={};
   let m;
   while((m=re.exec(text))){
@@ -1060,21 +1064,40 @@ function applyBulkPaste(){
   let s;
   s=pick('四柱推命',k=>k.startsWith('四柱推命')); if(s) setVal('comment_shishu', s.body||s.inline);
   s=pick('タロット',k=>k.startsWith('タロット')); if(s) setVal('comment_tarot', s.body||s.inline);
+  // 推奨日/動いてはいけない日は「日付の見出し」と「理由の見出し」を別々に用意する書式を
+  // 案内しているが、貼り付け元(別のAIチャット等)が見出しを1つにまとめ、日付を書かずに
+  // 本文だけをその下に続けて書いてくることがある(実例で確認)。その場合、理由欄への振り分け先が
+  // 見つからず本文がまるごと消えていた。「理由」見出しが無い時は、同じ見出しの本文を
+  // そのまま理由欄に使うことで、内容を取りこぼさないようにする。
+  const findKey=(matcher)=>keys.find(matcher);
   ['1','2','3'].forEach(n=>{
-    const dv=pick('推奨日'+n, k=>k.startsWith('推奨日'+n)&&!k.includes('理由'));
-    if(dv) setVal('comment_date'+n, dv.inline);
-    const wv=pick('推奨日'+n+'理由', k=>k.startsWith('推奨日'+n)&&k.includes('理由'));
-    if(wv) setVal('comment_date'+n+'_why', wv.body||wv.inline);
+    const dvKey=findKey(k=>k.startsWith('推奨日'+n)&&!k.includes('理由'));
+    const dv=dvKey?sec[dvKey]:null;
+    if(dv){ found.push('推奨日'+n); setVal('comment_date'+n, dv.inline); } else missing.push('推奨日'+n);
+    const wvKey=findKey(k=>k.startsWith('推奨日'+n)&&k.includes('理由'));
+    const wv=wvKey?sec[wvKey]:null;
+    if(wv){ found.push('推奨日'+n+'理由'); setVal('comment_date'+n+'_why', wv.body||wv.inline); }
+    else if(dv && dv.body){ found.push('推奨日'+n+'理由(本文から補完)'); setVal('comment_date'+n+'_why', dv.body); }
+    else missing.push('推奨日'+n+'理由');
   });
-  const av=pick('動いてはいけない日', k=>k.startsWith('動いてはいけない日')&&!k.includes('理由'));
-  if(av) setVal('comment_avoid_date', av.inline);
-  const avw=pick('動いてはいけない日理由', k=>k.startsWith('動いてはいけない日')&&k.includes('理由'));
-  if(avw) setVal('comment_avoid_why', avw.body||avw.inline);
+  const avKey=findKey(k=>k.startsWith('動いてはいけない日')&&!k.includes('理由'));
+  const av=avKey?sec[avKey]:null;
+  if(av){ found.push('動いてはいけない日'); setVal('comment_avoid_date', av.inline); } else missing.push('動いてはいけない日');
+  const avwKey=findKey(k=>k.startsWith('動いてはいけない日')&&k.includes('理由'));
+  const avw=avwKey?sec[avwKey]:null;
+  if(avw){ found.push('動いてはいけない日理由'); setVal('comment_avoid_why', avw.body||avw.inline); }
+  else if(av && av.body){ found.push('動いてはいけない日理由(本文から補完)'); setVal('comment_avoid_why', av.body); }
+  else missing.push('動いてはいけない日理由');
   s=pick('総合アドバイス', k=>k.startsWith('総合アドバイス')); if(s) setVal('comment_advice', s.body||s.inline);
   if(window._rd){
+    // 追加鑑定の見出しも、案内している「【追加鑑定:テーマ名】」通りに書かれるとは限らず、
+    // テーマ名だけの見出し(例:「勝負運」)で来ることがあるため、「について」を除いた
+    // 短いラベルでの一致も許容する。
     addonLabelsOf(window._rd.data).forEach((label,i)=>{
-      const a=pick('追加鑑定:'+label, k=>k.startsWith('追加鑑定')&&k.includes(label));
-      if(a) setVal('comment_addon_'+i, a.body||a.inline);
+      const shortLabel=label.replace(/について$/,'');
+      const key=findKey(k=>(k.startsWith('追加鑑定')&&k.includes(label))||k===shortLabel||k.includes(shortLabel));
+      if(key){ found.push('追加鑑定:'+label); setVal('comment_addon_'+i, sec[key].body||sec[key].inline); }
+      else missing.push('追加鑑定:'+label);
     });
   }
 
