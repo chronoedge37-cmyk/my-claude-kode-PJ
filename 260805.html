@@ -390,7 +390,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
       <strong style="color:var(--gold-bright);">②</strong> ChatGPTやClaudeなどのAIチャットにそのURLを貼り、「この内容で鑑定文を書いて」と依頼する<br>
       <strong style="color:var(--gold-bright);">③</strong> AIが書いた回答(文章)をコピーして、下の欄に貼り付けて「反映する」を押す<br><br>
       💡 ③で貼るのはAIが書いた「文章」で、①でコピーした「URL」ではありません。書式が合っていれば①〜⑥・追加鑑定の欄すべてに自動で振り分けられます。反映後も各欄は自由に編集できます。<br>
-      書式: <code>【四柱推命】</code> <code>【タロット】</code> <code>【推奨日1】日付</code> <code>【推奨日1理由】</code> <code>【推奨日2】</code>〜<code>【推奨日3理由】</code> <code>【動いてはいけない日】日付</code> <code>【動いてはいけない日理由】</code> <code>【総合アドバイス】</code>、追加鑑定は <code>【追加鑑定:恋愛について】</code> のように選択したテーマ名をそのまま使います。
+      書式: <code>【四柱推命】</code> <code>【タロット】</code> <code>【推奨日1】日付</code> <code>【推奨日1理由】</code> <code>【推奨日2】</code>〜<code>【推奨日3理由】</code> <code>【動いてはいけない日】日付</code> <code>【動いてはいけない日理由】</code> <code>【総合アドバイス】</code>、追加鑑定は <code>【追加鑑定:恋愛について】</code> のように選択したテーマ名をそのまま使います(「その他」で自由記述した長い質問文がテーマの場合は、一字一句そのまま繰り返さなくても大丈夫です。<code>【追加鑑定:○○について】</code>のように短く言い換えた見出しでも、書かれている順番で自動的に対応する欄に割り当てられます)。
     </div>
     <textarea id="bulkPasteInput" style="min-height:140px;" placeholder="【四柱推命】&#10;…&#10;&#10;【タロット】&#10;…&#10;&#10;【推奨日1】2026年8月9日(日・乙卯)&#10;【推奨日1理由】&#10;…"></textarea>
     <button class="btn-secondary" type="button" onclick="applyBulkPaste()" style="margin-top:.8rem;">反映する</button>
@@ -1093,12 +1093,29 @@ function applyBulkPaste(){
     // 追加鑑定の見出しも、案内している「【追加鑑定:テーマ名】」通りに書かれるとは限らず、
     // テーマ名だけの見出し(例:「勝負運」)で来ることがあるため、「について」を除いた
     // 短いラベルでの一致も許容する。
-    addonLabelsOf(window._rd.data).forEach((label,i)=>{
+    const addonLabels=addonLabelsOf(window._rd.data);
+    const usedKeys=new Set();
+    const unmatched=[];
+    addonLabels.forEach((label,i)=>{
       const shortLabel=label.replace(/について$/,'');
-      const key=findKey(k=>(k.startsWith('追加鑑定')&&k.includes(label))||k===shortLabel||k.includes(shortLabel));
-      if(key){ found.push('追加鑑定:'+label); setVal('comment_addon_'+i, sec[key].body||sec[key].inline); }
-      else missing.push('追加鑑定:'+label);
+      const key=findKey(k=>!usedKeys.has(k)&&((k.startsWith('追加鑑定')&&k.includes(label))||k===shortLabel||k.includes(shortLabel)));
+      if(key){ usedKeys.add(key); found.push('追加鑑定:'+label); setVal('comment_addon_'+i, sec[key].body||sec[key].inline); }
+      else unmatched.push(i);
     });
+    // 「その他」の自由記述(addonOther)がラベルになっている場合、ラベルそのものが
+    // お客様の生の質問文(長文・句読点入り)であることが多く、AI側がそれを一字一句
+    // そのまま見出しに書き写すとは限らない(むしろ短く言い換えるのが自然)。ラベル一致
+    // だけに頼ると、この種の追加鑑定は実質的に毎回反映されなくなっていた実例があったため、
+    // ラベルで拾えなかった分は「まだ使われていない追加鑑定見出し」を書かれている順に
+    // 割り当てるフォールバックを用意する。
+    if(unmatched.length){
+      const leftover=keys.filter(k=>!usedKeys.has(k)&&(k.startsWith('追加鑑定')||k==='その他'));
+      unmatched.forEach((i,idx)=>{
+        const key=leftover[idx];
+        if(key){ usedKeys.add(key); found.push('追加鑑定:'+addonLabels[i]+'(見出し順で補完)'); setVal('comment_addon_'+i, sec[key].body||sec[key].inline); }
+        else missing.push('追加鑑定:'+addonLabels[i]);
+      });
+    }
   }
 
   // 何が拾えて何が拾えなかったかを必ず表示する。無反応(サイレント失敗)のまま
