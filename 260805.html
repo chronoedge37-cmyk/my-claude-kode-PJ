@@ -196,6 +196,18 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 .pr-closing{font-size:11px;color:#5c4a30;line-height:1.55;margin-top:10px;text-align:center;}
 .pr-brand{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.18em;color:#a5793a;text-align:center;margin-top:7px;text-transform:uppercase;}
 .pr-seal-wrap{text-align:center;margin-top:9px;}
+/* ページを跨ぐ際、1枚ごとに独立した.pr-frame(=二重罫線の枠)で区切り、物理的な用紙にも
+   余白を持たせて出力する(exportPDF()側で1ページ=1.pr-frameとしてhtml2canvasする)。
+   .pr-page-footerはその「ちゃんと複数ページに分かれた鑑定書」という印象を補強する
+   小さなページ番号表記、.pr-closing-illustrationは最終ページに余白が大きく残った場合だけ
+   差し込む(お客様の五行に対応するお守り画像を使った)埋め草。 */
+.pr-page-footer{text-align:center;margin-top:14px;font-family:'Cinzel',serif;font-size:8px;letter-spacing:.22em;color:#b89a63;text-transform:uppercase;}
+.pr-closing-illustration{text-align:center;margin:8px 0 14px;}
+.pr-closing-amulet-frame{width:150px;height:150px;border-radius:50%;margin:0 auto;
+  border:2px solid #cfa15c;background:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 5px #fdfaf2,0 0 0 6px rgba(207,161,92,.4),0 0 26px rgba(207,161,92,.3);}
+.pr-closing-amulet{width:86%;height:86%;object-fit:contain;}
+.pr-closing-amulet-cap{font-size:11px;color:#8a6d3e;letter-spacing:.12em;margin-top:8px;}
 </style>
 </head>
 <body>
@@ -1340,36 +1352,94 @@ function sealIconSVG(){
 }
 
 // ===== ②タロットの図表: 3枚のスプレッド(現状・課題・行く先)を、実際のタロットカードを
-// 思わせる色付きの挿絵で見せる ===== 個々のカード名は鑑定師の自由記述の中にあるため機械的には
-// 拾えないが、単色のアイコンではなく「本物のカードらしい」配色・意匠にすることで、
-// 見ただけで「タロットをやってもらった」という実感と続きへの興味を引く狙い。
-function tarotSpreadSVG(){
-  const cards=[
-    {grad:['#1c2a52','#0d1730'], ring:'#8fa8d9', label:'現状',
-     art:`<circle cx="0" cy="-6" r="13" fill="none" stroke="#cfe0ff" stroke-width="1.6"/>
-          <path d="M0,-19 A13,13 0 0 0 0,7 A9,9 0 0 1 0,-19 Z" fill="#cfe0ff"/>
-          ${[[-20,-24],[18,-20],[-16,18],[20,14],[0,26]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1.6" fill="#eaf1ff"/>`).join('')}`},
-    {grad:['#3a1530','#1c0a1c'], ring:'#e0a5c6', label:'課題',
-     art:`<path d="M0,-16 C10,-16 16,-8 16,0 C16,8 10,16 0,16 C-10,16 -16,8 -16,0 C-16,-8 -10,-16 0,-16 Z" fill="none" stroke="#f0c9de" stroke-width="1.6"/>
-          <circle cx="0" cy="0" r="6.4" fill="#f0c9de"/>
-          <circle cx="0" cy="0" r="2.4" fill="#1c0a1c"/>`},
-    {grad:['#7a4a16','#3c220a'], ring:'#f3cf8e', label:'行く先',
-     art:`<circle cx="0" cy="0" r="9" fill="#ffe7b3"/>
-          ${[0,45,90,135,180,225,270,315].map(a=>{const r1=12,r2=19,rad=a*Math.PI/180;const x1=Math.cos(rad)*r1,y1=Math.sin(rad)*r1,x2=Math.cos(rad)*r2,y2=Math.sin(rad)*r2;return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#ffe7b3" stroke-width="2.4" stroke-linecap="round"/>`;}).join('')}`}
+// 思わせる色付きの挿絵で見せる ===== practitionerの自由記述から「現状は「隠者(正位置)」です。」
+// のように明示的に書かれたカード名を検出できた場合は、そのカードのスート(大アルカナ/ワンド/
+// カップ/ソード/ペンタクル)に応じた意匠とカード名そのものを表示し、検出できなかった位置だけ
+// 従来通りの汎用モチーフ(現状=月、課題=瞳、行く先=太陽)にフォールバックする。
+const TAROT_MAJOR=['愚者','魔術師','女教皇','女帝','皇帝','教皇','恋人','戦車','力','隠者','運命の輪','正義','吊るされた男','死神','節制','悪魔','塔','星','月','太陽','審判','世界'];
+const TAROT_SUITS=['ワンド','棒','カップ','杯','ソード','剣','ペンタクル','貨幣','コイン'];
+const TAROT_RANKS=['10','エース','1','2','3','4','5','6','7','8','9','ペイジ','ナイト','クイーン','キング','小姓','騎士','女王','王'];
+function escRe(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+function tarotSuitKindOf(suit){
+  if(!suit) return 'major';
+  if(suit==='ワンド'||suit==='棒') return 'wand';
+  if(suit==='カップ'||suit==='杯') return 'cup';
+  if(suit==='ソード'||suit==='剣') return 'sword';
+  return 'pentacle';
+}
+// practitionerが「現状は『◯◯』です。課題は『◯◯』です。結果(行く先)は『◯◯』です。」の
+// ように明示的な位置ラベルの直後にカード名を書く(実例で確認した実際の書式)前提で検出する。
+// 単純に文中の全カード名を拾うと、後段の説明文で同じカード名が再度出てきた際に誤検出するため、
+// 各位置ラベルの直後(30文字以内)に限定して探すことで、その誤検出を避ける。
+function detectTarotCards(text){
+  if(!text) return [null,null,null];
+  const majorPat=TAROT_MAJOR.map(escRe).join('|');
+  const suitPat=TAROT_SUITS.map(escRe).join('|');
+  const rankPat=TAROT_RANKS.map(escRe).join('|');
+  const cardRe=new RegExp(`(${majorPat}|(?:${suitPat})の(?:${rankPat}))(?:[(（](正位置|逆位置)[)）])?`);
+  const positions=[{re:/現状\s*は/},{re:/課題\s*は/},{re:/(結果|行く先)\s*は/}];
+  return positions.map(pos=>{
+    const m=pos.re.exec(text);
+    if(!m) return null;
+    const rest=text.slice(m.index+m[0].length, m.index+m[0].length+30);
+    const cm=cardRe.exec(rest);
+    if(!cm) return null;
+    const name=cm[1];
+    const suitMatch=new RegExp(`^(${suitPat})の`).exec(name);
+    return {name, orientation:cm[2]==='逆位置'?'逆位置':'正位置', isMajor:TAROT_MAJOR.includes(name), suit:suitMatch?suitMatch[1]:null};
+  });
+}
+function tarotSuitMotifSVG(kind,color){
+  if(kind==='wand') return `<line x1="0" y1="15" x2="0" y2="-12" stroke="${color}" stroke-width="3" stroke-linecap="round"/><path d="M0,-12 C6,-18 6,-24 0,-28 C-6,-24 -6,-18 0,-12 Z" fill="${color}"/>`;
+  if(kind==='cup') return `<path d="M-11,-9 C-11,3 11,3 11,-9" fill="none" stroke="${color}" stroke-width="2"/><line x1="0" y1="-9" x2="0" y2="11" stroke="${color}" stroke-width="2"/><line x1="-8" y1="15" x2="8" y2="15" stroke="${color}" stroke-width="2"/>`;
+  if(kind==='sword') return `<line x1="0" y1="-18" x2="0" y2="15" stroke="${color}" stroke-width="2.4"/><line x1="-9" y1="5" x2="9" y2="5" stroke="${color}" stroke-width="2.4"/><path d="M0,-18 L-4,-11 L4,-11 Z" fill="${color}"/>`;
+  if(kind==='pentacle'){
+    const pts=[0,1,2,3,4].map(i=>{const a=(-90+i*144)*Math.PI/180;return `${(Math.cos(a)*11).toFixed(1)},${(Math.sin(a)*11).toFixed(1)}`;}).join(' ');
+    return `<circle cx="0" cy="0" r="14" fill="none" stroke="${color}" stroke-width="1.6"/><polygon points="${pts}" fill="none" stroke="${color}" stroke-width="1.6"/>`;
+  }
+  return `<circle cx="0" cy="-6" r="13" fill="none" stroke="${color}" stroke-width="1.6"/>
+    <path d="M0,-19 A13,13 0 0 0 0,7 A9,9 0 0 1 0,-19 Z" fill="${color}"/>
+    ${[[-20,-24],[18,-20],[-16,18],[20,14],[0,26]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1.6" fill="#eaf1ff"/>`).join('')}`;
+}
+function tarotSpreadSVG(detected){
+  detected=detected||[null,null,null];
+  const defaults=[
+    {grad:['#1c2a52','#0d1730'], ring:'#8fa8d9', posLabel:'現状'},
+    {grad:['#3a1530','#1c0a1c'], ring:'#e0a5c6', posLabel:'課題'},
+    {grad:['#7a4a16','#3c220a'], ring:'#f3cf8e', posLabel:'行く先'}
   ];
+  const cards=defaults.map((d,i)=>{
+    const det=detected[i];
+    if(!det) return {grad:d.grad, ring:d.ring, kind: i===0?'major':(i===1?'major':'major'), label:d.posLabel, sub:''};
+    return {grad:d.grad, ring:d.ring, kind:det.isMajor?'major':tarotSuitKindOf(det.suit), label:det.name, sub:d.posLabel+'・'+det.orientation};
+  });
+  // 位置ごとの汎用モチーフ(検出できなかった場合のフォールバック)は、従来通り現状=月、課題=瞳、
+  // 行く先=太陽の描き分けを保つ。
+  const fallbackKind=['moon','eye','sun'];
   const defs=cards.map((c,i)=>`<linearGradient id="cardGrad${i}" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="${c.grad[0]}"/><stop offset="1" stop-color="${c.grad[1]}"/>
     </linearGradient>`).join('');
+  const artFor=(c,i)=>{
+    if(c.sub) return tarotSuitMotifSVG(c.kind, c.ring);
+    if(fallbackKind[i]==='moon') return tarotSuitMotifSVG('major', c.ring);
+    if(fallbackKind[i]==='eye') return `<path d="M0,-16 C10,-16 16,-8 16,0 C16,8 10,16 0,16 C-10,16 -16,8 -16,0 C-16,-8 -10,-16 0,-16 Z" fill="none" stroke="${c.ring}" stroke-width="1.6"/>
+          <circle cx="0" cy="0" r="6.4" fill="${c.ring}"/>
+          <circle cx="0" cy="0" r="2.4" fill="#1c0a1c"/>`;
+    return `<circle cx="0" cy="0" r="9" fill="${c.ring}"/>
+          ${[0,45,90,135,180,225,270,315].map(a=>{const r1=12,r2=19,rad=a*Math.PI/180;const x1=Math.cos(rad)*r1,y1=Math.sin(rad)*r1,x2=Math.cos(rad)*r2,y2=Math.sin(rad)*r2;return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${c.ring}" stroke-width="2.4" stroke-linecap="round"/>`;}).join('')}`;
+  };
   const card=(i,rot)=>{
     const c=cards[i], x=40+i*90;
+    const subLine=c.sub?`<text x="${x+30}" y="145" text-anchor="middle" font-family="'Shippori Antique B1',sans-serif" font-size="9" fill="#a5793a">${escHtml(c.sub)}</text>`:'';
     return `<g transform="rotate(${rot} ${x+30} 65)">
       <rect x="${x}" y="20" width="60" height="90" rx="7" fill="url(#cardGrad${i})" stroke="#cfa15c" stroke-width="2"/>
       <rect x="${x+5}" y="25" width="50" height="80" rx="4" fill="none" stroke="${c.ring}" stroke-width="1" opacity=".75"/>
-      <g transform="translate(${x+30} 65)">${c.art}</g>
+      <g transform="translate(${x+30} 65)">${artFor(c,i)}</g>
     </g>
-    <text x="${x+30}" y="130" text-anchor="middle" font-family="'Shippori Mincho B1',serif" font-size="13" fill="#8a6d3e">${c.label}</text>`;
+    <text x="${x+30}" y="132" text-anchor="middle" font-family="'Shippori Mincho B1',serif" font-size="12" fill="#8a6d3e">${escHtml(c.label)}</text>
+    ${subLine}`;
   };
-  return `<svg viewBox="0 0 280 140" width="255" height="128">
+  return `<svg viewBox="0 0 280 155" width="255" height="141">
     <defs>${defs}</defs>
     ${card(0,-6)}${card(1,0)}${card(2,6)}
   </svg>`;
@@ -1463,17 +1533,14 @@ function cornerFlourishSVG(pos){
 // 直接の原因になっていた。html2canvasで報告書をキャンバス画像化し、jsPDFでPDFファイルに
 // 組み立てて直接ダウンロードする方式にすることで、印刷ダイアログという不確実な機能に
 // 頼らずに済む(ファイルダウンロード自体はLINE内蔵ブラウザでも行える)。
-async function exportPDF(){
-  if(!window._rd)return;
-  const btn=document.getElementById('exportPdfBtn');
-  const origText=btn?btn.textContent:'';
-  if(btn){btn.disabled=true;btn.textContent='PDFを生成中…';}
-  const {data,bz,c}=window._rd;
+// 報告書の内容を「ブロック」の配列として組み立てる。各ブロックは常に1枚のページの中に
+// まとまって収まる(ブロックの途中でページを分割しない)最小単位で、後段のページ割り付けが
+// これを崩さずに詰めていく。
+function buildReportBlocks(data,bz,c,amuletFile){
   const dm=SE[bz.day.s];
-  const amuletFile=amuletFileFor(c);
-
+  const tarotRaw=document.getElementById('comment_tarot').value.trim();
   const shishu=formatParagraphs(document.getElementById('comment_shishu').value.trim()||'(未入力)');
-  const tarot=formatParagraphs(document.getElementById('comment_tarot').value.trim()||'(未入力)');
+  const tarot=formatParagraphs(tarotRaw||'(未入力)');
   const d1=escHtml(document.getElementById('comment_date1').value.trim()||'(未入力)');
   const d1w=formatParagraphs(document.getElementById('comment_date1_why').value.trim()||'(未入力)');
   const d2=escHtml(document.getElementById('comment_date2').value.trim()||'(未入力)');
@@ -1485,137 +1552,208 @@ async function exportPDF(){
   const advice=formatParagraphs(document.getElementById('comment_advice').value.trim()||'(未入力)');
 
   const addonLabels=addonLabelsOf(data);
-  const addonHtml=addonLabels.map((label,i)=>{
+  const addonBlocks=addonLabels.map((label,i)=>{
     const el=document.getElementById('comment_addon_'+i);
     const txt=formatParagraphs((el&&el.value.trim())||'(未入力)');
     return `<div class="pr-section"><div class="pr-section-head"><div class="pr-icon-badge">${starIconSVG()}</div><h2>追加鑑定：${escHtml(label)}</h2></div>${txt}</div>`;
-  }).join('');
+  });
 
-  document.getElementById('printArea').innerHTML=`
-    <div class="pr-frame"><div class="pr-page">
-      <div class="pr-watermark">${pageWatermarkSVG()}</div>
-      ${cornerFlourishSVG('tl')}${cornerFlourishSVG('tr')}${cornerFlourishSVG('bl')}${cornerFlourishSVG('br')}
-      <div class="pr-content">
-      <div class="pr-eyebrow">Five Elements &amp; Tarot Counsel</div>
-      <h1 class="pr-title">鑑定報告書</h1>
-      <div class="pr-rule"><span></span></div>
-      <div class="pr-elements-strip">${EL.map((el,i)=>`<span style="background:${EC[i]}" title="${el}"></span>`).join('')}</div>
-      <div class="pr-name">${escHtml(data.name)} 様</div>
+  const headerBlock=`
+    <div class="pr-eyebrow">Five Elements &amp; Tarot Counsel</div>
+    <h1 class="pr-title">鑑定報告書</h1>
+    <div class="pr-rule"><span></span></div>
+    <div class="pr-elements-strip">${EL.map((el,i)=>`<span style="background:${EC[i]}" title="${el}"></span>`).join('')}</div>
+    <div class="pr-name">${escHtml(data.name)} 様</div>
+    <div class="pr-meta">
+      <div>ご希望内容：${escHtml(data.action)}</div>
+      <div>希望期間：${escHtml(data.period)}</div>
+    </div>
+    <div class="pr-pillars-row">
+      <div class="pr-pillars">
+        <div class="pr-pillar">年柱<span>${pk(bz.year.s,bz.year.b)}</span></div>
+        <div class="pr-pillar">月柱<span>${pk(bz.month.s,bz.month.b)}</span></div>
+        <div class="pr-pillar">日柱<span>${pk(bz.day.s,bz.day.b)}</span></div>
+        ${bz.hour?`<div class="pr-pillar">時柱<span>${pk(bz.hour.s,bz.hour.b)}</span></div>`:''}
+      </div>
+      <div class="pr-amulet-frame">
+        <img class="pr-amulet" src="assets/amulets/${amuletFile}.png" alt="" onerror="this.parentElement.style.display='none'">
+      </div>
+    </div>
+    <div class="pr-evidence-head">
+      <span class="tag">Evidence · 鑑定の根拠</span>
+      <h2>五行バランス</h2>
+    </div>
+    <div class="pr-radar-wrap">
+      ${elementRadarSVG(c)}
+      <div class="pr-radar-cap">日主：${ST[bz.day.s]}(${EL[dm]})</div>
+    </div>`;
+  const baziBlock=`
+    <div class="pr-section">
+      <div class="pr-section-head"><div class="pr-icon-badge">${baziIconSVG()}</div><h2>① 四柱推命より</h2></div>
+      <div class="pr-illustration">${baziDiagramSVG()}</div>
+      ${shishu}
+    </div>`;
+  const tarotBlock=`
+    <div class="pr-section">
+      <div class="pr-section-head"><div class="pr-icon-badge">${tarotCardSVG()}</div><h2>② タロットより</h2></div>
+      <div class="pr-illustration">${tarotSpreadSVG(detectTarotCards(tarotRaw))}</div>
+      ${tarot}
+    </div>`;
+  // 各日付カード群・総合アドバイスの直前の罫線は、それぞれの先頭ブロックに含めておく
+  // (罫線だけが単独のブロックとしてページ末尾に取り残されるのを防ぐため)。
+  const day1Block=`
+    <div class="pr-rule"><span></span></div>
+    <div class="pr-day pr-day-top">
+      <div class="pr-day-icon">${sunBurstIconSVG()}</div>
+      <div class="pr-day-body">
+        <span class="pr-day-label">🌟 最もおすすめの日</span>
+        <div class="pr-day-date">${d1}</div>
+        ${d1w}
+      </div>
+    </div>`;
+  const day2Block=`
+    <div class="pr-day">
+      <div class="pr-day-icon">${starIconSVG()}</div>
+      <div class="pr-day-body">
+        <span class="pr-day-label">● 次におすすめの日</span>
+        <div class="pr-day-date">${d2}</div>
+        ${d2w}
+      </div>
+    </div>`;
+  const day3Block=`
+    <div class="pr-day">
+      <div class="pr-day-icon">${starIconSVG()}</div>
+      <div class="pr-day-body">
+        <span class="pr-day-label">● もう一つの候補日</span>
+        <div class="pr-day-date">${d3}</div>
+        ${d3w}
+      </div>
+    </div>`;
+  const dayAvoidBlock=`
+    <div class="pr-day pr-day-avoid">
+      <div class="pr-day-icon">${wardIconSVG()}</div>
+      <div class="pr-day-body">
+        <span class="pr-day-label">⚠️ 動いてはいけない日</span>
+        <div class="pr-day-date">${ad}</div>
+        ${adw}
+      </div>
+    </div>`;
+  const adviceBlock=`
+    <div class="pr-rule"><span></span></div>
+    <div class="pr-section">
+      <div class="pr-section-head"><div class="pr-icon-badge">${sealIconSVG()}</div><h2>総合アドバイス</h2></div>
+      ${advice}
+    </div>`;
+  const closingBlock=`
+    <div class="pr-rule"><span></span></div>
+    <div class="pr-seal-wrap">${sealIconSVG()}</div>
+    <div class="pr-closing">
+      この鑑定が、${escHtml(data.name)}様の新しい一歩の後押しとなりますように。<br>
+      まごころを込めて鑑定させていただきました。
+    </div>
+    <div class="pr-brand">五行庵 宗玄</div>`;
 
-      <div class="pr-meta">
-        <div>ご希望内容：${escHtml(data.action)}</div>
-        <div>希望期間：${escHtml(data.period)}</div>
-      </div>
+  return {
+    contentBlocks:[headerBlock, baziBlock, tarotBlock, day1Block, day2Block, day3Block, dayAvoidBlock, adviceBlock, ...addonBlocks],
+    closingBlock,
+  };
+}
 
-      <div class="pr-pillars-row">
-        <div class="pr-pillars">
-          <div class="pr-pillar">年柱<span>${pk(bz.year.s,bz.year.b)}</span></div>
-          <div class="pr-pillar">月柱<span>${pk(bz.month.s,bz.month.b)}</span></div>
-          <div class="pr-pillar">日柱<span>${pk(bz.day.s,bz.day.b)}</span></div>
-          ${bz.hour?`<div class="pr-pillar">時柱<span>${pk(bz.hour.s,bz.hour.b)}</span></div>`:''}
-        </div>
-        <div class="pr-amulet-frame">
-          <img class="pr-amulet" src="assets/amulets/${amuletFile}.png" alt="" onerror="this.parentElement.style.display='none'">
-        </div>
-      </div>
-
-      <div class="pr-evidence-head">
-        <span class="tag">Evidence · 鑑定の根拠</span>
-        <h2>五行バランス</h2>
-      </div>
-      <div class="pr-radar-wrap">
-        ${elementRadarSVG(c)}
-        <div class="pr-radar-cap">日主：${ST[bz.day.s]}(${EL[dm]})</div>
-      </div>
-
-      <div class="pr-rule"><span></span></div>
-
-      <div class="pr-section">
-        <div class="pr-section-head"><div class="pr-icon-badge">${baziIconSVG()}</div><h2>① 四柱推命より</h2></div>
-        <div class="pr-illustration">${baziDiagramSVG()}</div>
-        ${shishu}
-      </div>
-      <div class="pr-section">
-        <div class="pr-section-head"><div class="pr-icon-badge">${tarotCardSVG()}</div><h2>② タロットより</h2></div>
-        <div class="pr-illustration">${tarotSpreadSVG()}</div>
-        ${tarot}
-      </div>
-
-      <div class="pr-rule"><span></span></div>
-
-      <div class="pr-day pr-day-top">
-        <div class="pr-day-icon">${sunBurstIconSVG()}</div>
-        <div class="pr-day-body">
-          <span class="pr-day-label">🌟 最もおすすめの日</span>
-          <div class="pr-day-date">${d1}</div>
-          ${d1w}
-        </div>
-      </div>
-      <div class="pr-day">
-        <div class="pr-day-icon">${starIconSVG()}</div>
-        <div class="pr-day-body">
-          <span class="pr-day-label">● 次におすすめの日</span>
-          <div class="pr-day-date">${d2}</div>
-          ${d2w}
-        </div>
-      </div>
-      <div class="pr-day">
-        <div class="pr-day-icon">${starIconSVG()}</div>
-        <div class="pr-day-body">
-          <span class="pr-day-label">● もう一つの候補日</span>
-          <div class="pr-day-date">${d3}</div>
-          ${d3w}
-        </div>
-      </div>
-      <div class="pr-day pr-day-avoid">
-        <div class="pr-day-icon">${wardIconSVG()}</div>
-        <div class="pr-day-body">
-          <span class="pr-day-label">⚠️ 動いてはいけない日</span>
-          <div class="pr-day-date">${ad}</div>
-          ${adw}
-        </div>
-      </div>
-
-      <div class="pr-rule"><span></span></div>
-
-      <div class="pr-section">
-        <div class="pr-section-head"><div class="pr-icon-badge">${sealIconSVG()}</div><h2>総合アドバイス</h2></div>
-        ${advice}
-      </div>
-
-      ${addonHtml}
-
-      <div class="pr-rule"><span></span></div>
-
-      <div class="pr-seal-wrap">${sealIconSVG()}</div>
-      <div class="pr-closing">
-        この鑑定が、${escHtml(data.name)}様の新しい一歩の後押しとなりますように。<br>
-        まごころを込めて鑑定させていただきました。
-      </div>
-      <div class="pr-brand">五行庵 宗玄</div>
-      </div>
-    </div></div>
-  `;
+// ===== PDF保存 =====
+// window.print()(ブラウザの印刷ダイアログ)には依存しない。html2canvasで報告書をキャンバス
+// 画像化し、jsPDFでPDFファイルに組み立てて直接ダウンロードする(詳しくはCLAUDE.md参照)。
+//
+// 「1枚の長い画像をA4の高さで機械的に輪切りにする」方式だと、用紙の端まで枠線が
+// ぴったり付いて余白が無い、ページの境目に文章が中途半端に千切れる、という「鑑定書らしくない」
+// 見た目になっていた。そのため、内容をあらかじめ「ブロック」単位(buildReportBlocks())に分け、
+// 各ブロックの実際の描画高さを一度計測してから、1ページに収まる分だけを貪欲法で束ね、
+// ページごとに独立した.pr-frame(二重罫線・透かし・四隅の飾り・ページ番号)をhtml2canvasで
+// 個別に画像化し、物理ページ側にも余白(marginMm)を持たせて配置する。
+async function exportPDF(){
+  if(!window._rd)return;
+  const btn=document.getElementById('exportPdfBtn');
+  const origText=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='PDFを生成中…';}
+  const {data,bz,c}=window._rd;
+  const amuletFile=amuletFileFor(c);
+  const printArea=document.getElementById('printArea');
 
   try{
-    const target=document.querySelector('#printArea .pr-frame');
-    const canvas=await html2canvas(target,{scale:2,backgroundColor:'#fdfaf2',useCORS:true});
-    const imgData=canvas.toDataURL('image/jpeg',0.92);
+    const {contentBlocks,closingBlock}=buildReportBlocks(data,bz,c,amuletFile);
+
+    // ---- 1. 計測用に全ブロックを1枚のフラットな.pr-contentへ仮描画し、実際の高さを測る ----
+    printArea.innerHTML=`<div class="pr-frame"><div class="pr-page"><div class="pr-content">
+      ${contentBlocks.map((b,i)=>`<div class="pr-block" data-i="${i}">${b}</div>`).join('')}
+    </div></div></div>`;
+    const blockEls=Array.from(printArea.querySelectorAll('.pr-block'));
+    const tops=blockEls.map(el=>el.offsetTop);
+    const heights=blockEls.map((el,i)=>i<blockEls.length-1?tops[i+1]-tops[i]:el.offsetHeight);
+
+    // ---- 2. 1ページの目安の高さ(px、794px幅のcontent領域基準)に収まるよう貪欲法で束ねる ----
+    // この数値は、物理ページの余白・二重罫線・ページ番号表記を差し引いてもA4 1枚に収まるよう
+    // Playwrightでの実測(exportPDF()と同じ処理を実行し、生成される画像の高さを検証)をもとに
+    // 決めている。ヘッダーブロック(タイトル・命式・五行レーダー)は必ず1ページ目の先頭に置く。
+    const PAGE_BUDGET_PX=950;
+    const CLOSING_BLOCK_ESTIMATE_PX=190;
+    const pages=[[0]];
+    let used=heights[0];
+    for(let i=1;i<contentBlocks.length;i++){
+      const h=heights[i];
+      if(used>0 && used+h>PAGE_BUDGET_PX){ pages.push([]); used=0; }
+      pages[pages.length-1].push(i);
+      used+=h;
+    }
+    // 総合アドバイス等で最後のページがほぼ埋まっている場合、末尾の挨拶文だけを既存ページに
+    // 詰め込むとその物理ページからはみ出しかねないため、その時は新しいページを用意する。
+    if(used>0 && used+CLOSING_BLOCK_ESTIMATE_PX>PAGE_BUDGET_PX){ pages.push([]); used=0; }
+    pages[pages.length-1].push('closing');
+    used+=CLOSING_BLOCK_ESTIMATE_PX;
+
+    // ---- 3. 最終ページに大きな余白が残る場合は、五行に対応するお守り画像で埋める ----
+    const lastPageIdx=pages.length-1;
+    const leftoverPx=PAGE_BUDGET_PX-used;
+    const closingIllustrationBlock=`
+      <div class="pr-closing-illustration">
+        <div class="pr-closing-amulet-frame">
+          <img class="pr-closing-amulet" src="assets/amulets/${amuletFile}.png" alt="" onerror="this.parentElement.style.display='none'">
+        </div>
+        <div class="pr-closing-amulet-cap">御守 · 五行の加護</div>
+      </div>`;
+    const useFiller=leftoverPx>240;
+
+    // ---- 4. ページごとに独立した.pr-frameを組み立てて、1ページ=1画像としてPDFに配置する ----
+    printArea.innerHTML='';
+    const pageEls=pages.map((idxList,pi)=>{
+      const body=idxList.map(idx=>{
+        if(idx==='closing') return (pi===lastPageIdx&&useFiller?closingIllustrationBlock:'')+closingBlock;
+        return contentBlocks[idx];
+      }).join('');
+      const wrap=document.createElement('div');
+      wrap.innerHTML=`<div class="pr-frame"><div class="pr-page">
+        <div class="pr-watermark">${pageWatermarkSVG()}</div>
+        ${cornerFlourishSVG('tl')}${cornerFlourishSVG('tr')}${cornerFlourishSVG('bl')}${cornerFlourishSVG('br')}
+        <div class="pr-content">${body}
+          <div class="pr-page-footer">五行庵 宗玄　・　${pi+1} / ${pages.length}</div>
+        </div>
+      </div></div>`;
+      const el=wrap.firstElementChild;
+      printArea.appendChild(el);
+      return el;
+    });
+
     const {jsPDF}=window.jspdf;
     const pdf=new jsPDF({unit:'mm',format:'a4'});
-    const pageW=pdf.internal.pageSize.getWidth();
-    const pageH=pdf.internal.pageSize.getHeight();
-    const imgW=pageW;
-    const imgH=canvas.height*imgW/canvas.width;
-    let heightLeft=imgH, position=0;
-    pdf.addImage(imgData,'JPEG',0,position,imgW,imgH);
-    heightLeft-=pageH;
-    while(heightLeft>0){
-      position=heightLeft-imgH;
-      pdf.addPage();
-      pdf.addImage(imgData,'JPEG',0,position,imgW,imgH);
-      heightLeft-=pageH;
+    const pageWmm=pdf.internal.pageSize.getWidth();
+    const marginMm=8;
+    const imgWmm=pageWmm-marginMm*2;
+    for(let pi=0;pi<pageEls.length;pi++){
+      const canvas=await html2canvas(pageEls[pi],{scale:2,backgroundColor:'#fdfaf2',useCORS:true});
+      const imgData=canvas.toDataURL('image/jpeg',0.92);
+      const imgHmm=canvas.height*imgWmm/canvas.width;
+      if(pi>0) pdf.addPage();
+      pdf.addImage(imgData,'JPEG',marginMm,marginMm,imgWmm,imgHmm);
     }
+
     // ダウンロードファイル名はASCII文字のみにする。<a download>属性は非ASCII(日本語)の
     // ファイル名だと一部の環境で無視され、拡張子(.pdf)ごと消えて「download」という
     // 名前無し・種類不明のファイルとして保存されてしまうことがある(実機検証で確認済み)。
