@@ -205,11 +205,6 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 
 <!-- ===================== MODE A: お客様入力フォーム ===================== -->
 <div id="modeCustomer" class="wrap" style="display:none">
-  <div id="lineWarnCustomer" class="line-warn" style="display:none;">
-    <p>⚠️ <strong>現在LINEアプリ内のブラウザで開いています。</strong>このまま送信すると、鑑定師用ページが正しく動作しない場合があります。右上の「…」メニューから「他のブラウザで開く」を選ぶか、下のボタンでURLをコピーしてSafari/Chromeに貼り付けて開き直してください。</p>
-    <button class="btn-secondary" type="button" onclick="copyCurrentUrlForExternalBrowser('lineWarnCopiedCustomer')">このページのURLをコピー</button>
-    <div class="copied-msg" id="lineWarnCopiedCustomer" style="display:none;">コピーしました ✓ Safari/Chromeに貼り付けて開いてください</div>
-  </div>
   <div class="eyebrow">Five Elements · 開始日鑑定サロン</div>
   <h1 class="page-title">鑑定お申し込みフォーム</h1>
   <p class="page-sub">
@@ -222,6 +217,10 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
     <div class="field">
       <label>お名前(ニックネーム可)<span class="req">*必須</span></label>
       <input type="text" id="c_name" placeholder="例：はな">
+    </div>
+    <div class="field">
+      <label>メールアドレス(任意・お支払い時の入力を省略できます)</label>
+      <input type="email" id="c_email" placeholder="例：you@example.com">
     </div>
     <div class="field-row">
       <div class="field"><label>生年(西暦)<span class="req">*</span></label><select id="c_year"></select></div>
@@ -730,10 +729,10 @@ function amuletFileFor(c){
 // (決済の成否そのものはバックエンドがないため確認できない。ボタンを押した時点で
 //  「支払いに進んだ」とみなしてリストから外す、という割り切った実装)
 const PENDING_ADDONS_KEY = 'sougen_pending_addons';
-function savePendingAddons(name, addonLabels){
+function savePendingAddons(name, email, addonLabels){
   try{
     if(!addonLabels.length){localStorage.removeItem(PENDING_ADDONS_KEY);return;}
-    localStorage.setItem(PENDING_ADDONS_KEY, JSON.stringify({name, addonLabels}));
+    localStorage.setItem(PENDING_ADDONS_KEY, JSON.stringify({name, email, addonLabels}));
   }catch(e){}
 }
 function removePendingAddon(label){
@@ -751,7 +750,7 @@ function removePendingAddon(label){
 // (この画面はURLの done= パラメータに丸ごと保存されるので、タブが失われても同じ内容に戻れる。
 //  ただしメール自動通知は「送信した瞬間に1回だけ」が原則なので、isFreshSubmitがtrueの時しか行わない)
 function renderCompletion(data, isFreshSubmit){
-  const {name,Y,M,D,H,Min,gender,action,period,detail}=data;
+  const {name,email,Y,M,D,H,Min,gender,action,period,detail}=data;
   const hv=H===null||H===undefined?'':H, mv=Min===null||Min===undefined?'':Min;
   const encoded=enc(data);
   const base=location.href.split('?')[0];
@@ -809,11 +808,17 @@ function renderCompletion(data, isFreshSubmit){
     if(onClick) a.addEventListener('click',onClick);
     return a;
   };
-  savePendingAddons(name, addonLabels);
-  payArea.appendChild(makeBtn(STRIPE_BASE_URL+'?client_reference_id='+encodeURIComponent(name), '本鑑定のお支払い(¥2,000)'));
+  // メールアドレスを入力済みなら、Stripeの決済リンクに prefilled_email を付けておく。
+  // Payment Linkは1決済=1チェックアウトのため、本鑑定＋追加鑑定と決済が複数回に分かれると
+  // Stripe側のメール欄をその都度手入力させることになっていた(お客様から「毎回入力させられる」と
+  // 指摘があった実例)。ここで一度だけ入力してもらったメールを全ての決済リンクに引き継ぐことで、
+  // Stripe側では入力済み(編集は可能)の状態で表示され、re-typeの手間を無くす。
+  const emailQS = email ? '&prefilled_email='+encodeURIComponent(email) : '';
+  savePendingAddons(name, email, addonLabels);
+  payArea.appendChild(makeBtn(STRIPE_BASE_URL+'?client_reference_id='+encodeURIComponent(name)+emailQS, '本鑑定のお支払い(¥2,000)'));
   addonLabels.forEach(label=>{
     payArea.appendChild(makeBtn(
-      STRIPE_ADDON_URL+'?client_reference_id='+encodeURIComponent(name+'/'+label),
+      STRIPE_ADDON_URL+'?client_reference_id='+encodeURIComponent(name+'/'+label)+emailQS,
       label+' のお支払い(+¥500)',
       ()=>removePendingAddon(label)
     ));
@@ -844,6 +849,7 @@ function renderCompletion(data, isFreshSubmit){
 
 function submitCustomer(){
   const name=document.getElementById('c_name').value.trim();
+  const email=document.getElementById('c_email').value.trim();
   const Y=parseInt(document.getElementById('c_year').value);
   const M=parseInt(document.getElementById('c_month').value);
   const D=parseInt(document.getElementById('c_day').value);
@@ -865,7 +871,7 @@ function submitCustomer(){
   }
   err.style.display='none';
 
-  const data={name,Y,M,D,H:hv===''?null:parseInt(hv),Min:mv===''?null:parseInt(mv),gender,action,period,detail,addons,addonOther};
+  const data={name,email,Y,M,D,H:hv===''?null:parseInt(hv),Min:mv===''?null:parseInt(mv),gender,action,period,detail,addons,addonOther};
 
   // この完了画面をURLに保存する。タブが失われる/リロードされる/LINEアプリとの往復で
   // ブラウザが状態を破棄しても、同じURLに戻れば支払いボタンが必ず揃って復元される。
@@ -1655,7 +1661,6 @@ function saveSetup(){
   const p=new URLSearchParams(location.search),mode=p.get('mode'),d=p.get('d'),done=p.get('done');
   if(!mode||mode==='customer'){
     document.getElementById('modeCustomer').style.display='block';initForm();applyPrefill();
-    showLineBrowserWarnIfNeeded('lineWarnCustomer');
     if(done){
       const data=dec(done);
       if(data) renderCompletion(data,false);

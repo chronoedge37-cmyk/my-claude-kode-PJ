@@ -62,13 +62,16 @@ const PENDING_ADDONS_KEY = 'sougen_pending_addons';
   try{
     const raw=localStorage.getItem(PENDING_ADDONS_KEY);
     if(!raw)return;
-    const {name,addonLabels}=JSON.parse(raw);
+    const {name,email,addonLabels}=JSON.parse(raw);
     if(!addonLabels||!addonLabels.length)return;
     const area=document.getElementById('morePayButtons');
+    // 260805.html側で入力済みのメールアドレスがあれば、ここでの追加鑑定の決済リンクにも
+    // 引き継ぐ(Stripeのメール欄を毎回手入力させないため)。
+    const emailQS = email ? '&prefilled_email='+encodeURIComponent(email) : '';
     addonLabels.forEach(label=>{
       const a=document.createElement('a');
       a.className='pay-btn';
-      a.href=STRIPE_ADDON_URL+'?client_reference_id='+encodeURIComponent(name+'/'+label);
+      a.href=STRIPE_ADDON_URL+'?client_reference_id='+encodeURIComponent(name+'/'+label)+emailQS;
       a.textContent=label+' のお支払い(+¥500)';
       a.addEventListener('click',()=>{
         try{
