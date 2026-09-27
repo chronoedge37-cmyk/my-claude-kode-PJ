@@ -203,10 +203,6 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
    差し込む(お客様の五行に対応するお守り画像を使った)埋め草。 */
 .pr-page-footer{text-align:center;margin-top:14px;font-family:'Cinzel',serif;font-size:8px;letter-spacing:.22em;color:#b89a63;text-transform:uppercase;}
 .pr-closing-illustration{text-align:center;margin:8px 0 14px;}
-.pr-closing-amulet-frame{width:150px;height:150px;border-radius:50%;margin:0 auto;
-  border:2px solid #cfa15c;background:#fff;display:flex;align-items:center;justify-content:center;
-  box-shadow:0 0 0 5px #fdfaf2,0 0 0 6px rgba(207,161,92,.4),0 0 26px rgba(207,161,92,.3);}
-.pr-closing-amulet{width:86%;height:86%;object-fit:contain;}
 .pr-closing-amulet-cap{font-size:11px;color:#8a6d3e;letter-spacing:.12em;margin-top:8px;}
 </style>
 </head>
@@ -726,10 +722,14 @@ function addonLabelsOf(data){
   return (data.addons||[]).map(k=>ADDON_LABELS[k]||k).concat(data.addonOther?[data.addonOther]:[]);
 }
 
+// 五行の集計cの中で最も強い一行のindex(0=木〜4=水)を返す(amuletFileFor/exportPDFで共用)
+function dominantElementIndex(c){
+  let maxI=0;for(let i=1;i<5;i++){if(c[i]>c[maxI])maxI=i;}
+  return maxI;
+}
 // 五行の集計cから、最も強い一行に対応するお守り画像ファイル名を返す(initReadingとexportPDFで共用)
 function amuletFileFor(c){
-  let maxI=0;for(let i=1;i<5;i++){if(c[i]>c[maxI])maxI=i;}
-  return {'木':'wood','火':'fire','土':'earth','金':'metal','水':'water'}[EL[maxI]];
+  return {'木':'wood','火':'fire','土':'earth','金':'metal','水':'water'}[EL[dominantElementIndex(c)]];
 }
 
 // ===== 支払い後にthanks.htmlへ引き継ぐ「未払いの追加鑑定」リスト =====
@@ -1350,6 +1350,28 @@ function sealIconSVG(){
     <text x="30" y="39" text-anchor="middle" font-family="'Shippori Mincho B1',serif" font-size="24" fill="#f3ecdd">宗玄</text>
   </svg>`;
 }
+// ===== 最終ページの余白埋め用「お守り」(SVG) — 宗玄氏(落款)と五行のメイン(お客様の
+// 命式で最も強い一行)を組み合わせた、この報告書だけの一枚 =====
+// Pillow等での画像生成スクリプトはリポジトリに残っていない(既存の五行別お守りPNGはその産物)ため、
+// 新しい合成画像はPNG生成に頼らず、既存のCSS+インラインSVGの流儀のまま作る。
+function closingAmuletSVG(elIndex){
+  const kanji=EL[elIndex], color=EC[elIndex];
+  const dots=[0,30,60,90,120,150,180,210,240,270,300,330].map(a=>{
+    const rad=a*Math.PI/180, x=100+Math.cos(rad)*87, y=100+Math.sin(rad)*87;
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="#cfa15c"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 200 200" width="170" height="170">
+    <circle cx="100" cy="100" r="92" fill="#1a1206"/>
+    <circle cx="100" cy="100" r="92" fill="none" stroke="#cfa15c" stroke-width="4"/>
+    <circle cx="100" cy="100" r="82" fill="none" stroke="#cfa15c" stroke-width="1.4"/>
+    ${dots}
+    <text x="100" y="122" text-anchor="middle" font-family="'Shippori Mincho B1',serif" font-size="72" font-weight="700" fill="${color}">${kanji}</text>
+    <g transform="translate(140 152)">
+      <rect x="-15" y="-15" width="30" height="30" rx="3" fill="#a5342a" stroke="#fdfaf2" stroke-width="1.5"/>
+      <text x="0" y="5" text-anchor="middle" font-family="'Shippori Mincho B1',serif" font-size="13" fill="#f3ecdd">宗玄</text>
+    </g>
+  </svg>`;
+}
 
 // ===== ②タロットの図表: 3枚のスプレッド(現状・課題・行く先)を、実際のタロットカードを
 // 思わせる色付きの挿絵で見せる ===== practitionerの自由記述から「現状は「隠者(正位置)」です。」
@@ -1586,7 +1608,12 @@ function buildReportBlocks(data,bz,c,amuletFile){
     <div class="pr-radar-wrap">
       ${elementRadarSVG(c)}
       <div class="pr-radar-cap">日主：${ST[bz.day.s]}(${EL[dm]})</div>
-    </div>`;
+    </div>
+    <div class="pr-evidence-head" style="margin-top:10px;">
+      <span class="tag">Tarot · 展開</span>
+      <h2>タロット・スリーカードスプレッド</h2>
+    </div>
+    <div class="pr-illustration" style="margin-bottom:0;">${tarotSpreadSVG(detectTarotCards(tarotRaw))}</div>`;
   const baziBlock=`
     <div class="pr-section">
       <div class="pr-section-head"><div class="pr-icon-badge">${baziIconSVG()}</div><h2>① 四柱推命より</h2></div>
@@ -1596,7 +1623,6 @@ function buildReportBlocks(data,bz,c,amuletFile){
   const tarotBlock=`
     <div class="pr-section">
       <div class="pr-section-head"><div class="pr-icon-badge">${tarotCardSVG()}</div><h2>② タロットより</h2></div>
-      <div class="pr-illustration">${tarotSpreadSVG(detectTarotCards(tarotRaw))}</div>
       ${tarot}
     </div>`;
   // 各日付カード群・総合アドバイスの直前の罫線は、それぞれの先頭ブロックに含めておく
@@ -1695,8 +1721,12 @@ async function exportPDF(){
     // 決めている。ヘッダーブロック(タイトル・命式・五行レーダー)は必ず1ページ目の先頭に置く。
     const PAGE_BUDGET_PX=950;
     const CLOSING_BLOCK_ESTIMATE_PX=190;
-    const pages=[[0]];
-    let used=heights[0];
+    // 1ページ目は「①命式・五行レーダー・②タロットの展開図」だけを乗せる画像主体のページに
+    // 固定する(本文が始まる前に、見た目だけで内容の豊かさが伝わる1枚を独立させるための
+    // 明示的な指示による)。ヘッダーブロックの後に必ず改ページし、本文(①②の文章以降)は
+    // 空きがあっても1ページ目には詰め込まない。
+    const pages=[[0],[]];
+    let used=0;
     for(let i=1;i<contentBlocks.length;i++){
       const h=heights[i];
       if(used>0 && used+h>PAGE_BUDGET_PX){ pages.push([]); used=0; }
@@ -1714,10 +1744,8 @@ async function exportPDF(){
     const leftoverPx=PAGE_BUDGET_PX-used;
     const closingIllustrationBlock=`
       <div class="pr-closing-illustration">
-        <div class="pr-closing-amulet-frame">
-          <img class="pr-closing-amulet" src="assets/amulets/${amuletFile}.png" alt="" onerror="this.parentElement.style.display='none'">
-        </div>
-        <div class="pr-closing-amulet-cap">御守 · 五行の加護</div>
+        ${closingAmuletSVG(dominantElementIndex(c))}
+        <div class="pr-closing-amulet-cap">御守 · 五行庵宗玄 × ${EL[dominantElementIndex(c)]}の加護</div>
       </div>`;
     const useFiller=leftoverPx>240;
 
