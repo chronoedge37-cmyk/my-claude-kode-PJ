@@ -148,7 +148,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 .pr-corner.bl{bottom:10px;left:10px;transform:scaleY(-1);}
 .pr-corner.br{bottom:10px;right:10px;transform:scale(-1,-1);}
 .pr-eyebrow{font-family:'Cinzel',serif;font-size:9px;letter-spacing:.32em;color:#a5793a;text-transform:uppercase;margin-bottom:5px;text-align:center;}
-.pr-title{font-family:'Shippori Mincho B1',serif;font-size:25px;font-weight:800;margin-bottom:4px;color:#1a1206;text-align:center;letter-spacing:.08em;}
+.pr-title{font-family:'Shippori Mincho B1',serif;font-size:32px;font-weight:800;margin-bottom:6px;color:#1a1206;text-align:center;letter-spacing:.08em;}
 .pr-rule{display:flex;align-items:center;margin:9px 0 7px;}
 .pr-rule::before,.pr-rule::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#cfa15c);}
 .pr-rule::after{background:linear-gradient(90deg,#cfa15c,transparent);}
@@ -1643,6 +1643,7 @@ function buildReportBlocks(data,bz,c,amuletFile){
   const tarotBlock=`
     <div class="pr-section">
       <div class="pr-section-head"><div class="pr-icon-badge">${tarotCardSVG()}</div><h2>② タロットより</h2></div>
+      <div class="pr-illustration">${tarotSpreadSVG(detectTarotCards(tarotRaw))}</div>
       ${tarot}
     </div>`;
   // 各日付カード群・総合アドバイスの直前の罫線は、それぞれの先頭ブロックに含めておく
