@@ -204,6 +204,13 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 .pr-page-footer{text-align:center;margin-top:14px;font-family:'Cinzel',serif;font-size:8px;letter-spacing:.22em;color:#b89a63;text-transform:uppercase;}
 .pr-closing-illustration{text-align:center;margin:8px 0 14px;}
 .pr-closing-amulet-cap{font-size:11px;color:#8a6d3e;letter-spacing:.12em;margin-top:8px;}
+/* 宗玄氏の肖像(assets/portrait/sougen.png、intro-landing.htmlのヒーローと同じ既存アセット)が
+   五行のメダル(closingAmuletSVG)を見つめる構図。肖像の視線が右上を向いているため、
+   メダルはその視線の先、頭部右上の余白に重ねて配置する。 */
+.pr-closing-portrait-wrap{position:relative;display:inline-block;margin:0 auto;}
+.pr-closing-portrait{width:150px;height:auto;display:block;filter:drop-shadow(0 4px 10px rgba(0,0,0,.25));}
+.pr-closing-orb{position:absolute;top:2%;right:-34%;width:80px;height:80px;filter:drop-shadow(0 0 10px rgba(207,161,92,.5));}
+.pr-closing-orb svg{width:100%;height:100%;display:block;}
 </style>
 </head>
 <body>
@@ -1350,27 +1357,40 @@ function sealIconSVG(){
     <text x="30" y="39" text-anchor="middle" font-family="'Shippori Mincho B1',serif" font-size="24" fill="#f3ecdd">宗玄</text>
   </svg>`;
 }
-// ===== 最終ページの余白埋め用「お守り」(SVG) — 宗玄氏(落款)と五行のメイン(お客様の
-// 命式で最も強い一行)を組み合わせた、この報告書だけの一枚 =====
+// ===== 最終ページの余白埋め用「お守り」(SVG) — 五行のメイン(お客様の命式で最も強い
+// 一行)を表すメダル。単独で使う時は右下に宗玄氏の落款を添え、宗玄氏の肖像と組み合わせる
+// 時(closingPortraitOrbHtml参照)はwithSeal=falseにして落款を省く(肖像そのものが
+// 「宗玄氏」を表すため、小さなメダルの中にまで重ねて入れると煩雑になる)。 =====
 // Pillow等での画像生成スクリプトはリポジトリに残っていない(既存の五行別お守りPNGはその産物)ため、
 // 新しい合成画像はPNG生成に頼らず、既存のCSS+インラインSVGの流儀のまま作る。
-function closingAmuletSVG(elIndex){
+function closingAmuletSVG(elIndex, withSeal){
+  if(withSeal===undefined) withSeal=true;
   const kanji=EL[elIndex], color=EC[elIndex];
   const dots=[0,30,60,90,120,150,180,210,240,270,300,330].map(a=>{
     const rad=a*Math.PI/180, x=100+Math.cos(rad)*87, y=100+Math.sin(rad)*87;
     return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="#cfa15c"/>`;
   }).join('');
+  const seal=withSeal?`<g transform="translate(140 152)">
+      <rect x="-15" y="-15" width="30" height="30" rx="3" fill="#a5342a" stroke="#fdfaf2" stroke-width="1.5"/>
+      <text x="0" y="5" text-anchor="middle" font-family="'Shippori Mincho B1',serif" font-size="13" fill="#f3ecdd">宗玄</text>
+    </g>`:'';
   return `<svg viewBox="0 0 200 200" width="170" height="170">
     <circle cx="100" cy="100" r="92" fill="#1a1206"/>
     <circle cx="100" cy="100" r="92" fill="none" stroke="#cfa15c" stroke-width="4"/>
     <circle cx="100" cy="100" r="82" fill="none" stroke="#cfa15c" stroke-width="1.4"/>
     ${dots}
     <text x="100" y="122" text-anchor="middle" font-family="'Shippori Mincho B1',serif" font-size="72" font-weight="700" fill="${color}">${kanji}</text>
-    <g transform="translate(140 152)">
-      <rect x="-15" y="-15" width="30" height="30" rx="3" fill="#a5342a" stroke="#fdfaf2" stroke-width="1.5"/>
-      <text x="0" y="5" text-anchor="middle" font-family="'Shippori Mincho B1',serif" font-size="13" fill="#f3ecdd">宗玄</text>
-    </g>
+    ${seal}
   </svg>`;
+}
+// ===== 宗玄氏の肖像(assets/portrait/sougen.png)が、五行のメダルを見つめる構図 =====
+// intro-landing.htmlのヒーローと同じ既存の肖像アセットをそのまま使い(新しいキャラクター画像は
+// 作らない)、視線の先(頭部右上の余白)に五行のメダルを重ねて配置する。
+function closingPortraitOrbHtml(elIndex){
+  return `<div class="pr-closing-portrait-wrap">
+    <img class="pr-closing-portrait" src="assets/portrait/sougen.png" alt="" onerror="this.style.display='none'">
+    <div class="pr-closing-orb">${closingAmuletSVG(elIndex,false)}</div>
+  </div>`;
 }
 
 // ===== ②タロットの図表: 3枚のスプレッド(現状・課題・行く先)を、実際のタロットカードを
@@ -1744,7 +1764,7 @@ async function exportPDF(){
     const leftoverPx=PAGE_BUDGET_PX-used;
     const closingIllustrationBlock=`
       <div class="pr-closing-illustration">
-        ${closingAmuletSVG(dominantElementIndex(c))}
+        ${closingPortraitOrbHtml(dominantElementIndex(c))}
         <div class="pr-closing-amulet-cap">御守 · 五行庵宗玄 × ${EL[dominantElementIndex(c)]}の加護</div>
       </div>`;
     const useFiller=leftoverPx>240;
