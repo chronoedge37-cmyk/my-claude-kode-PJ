@@ -358,6 +358,7 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
     <div class="info-row">希望期間: <strong id="r_period"></strong></div>
     <div class="info-row" id="r_detailRow" style="display:none;">今の状況・気になっていること: <strong id="r_detail"></strong></div>
     <div class="info-row" id="r_addonsRow" style="display:none;color:var(--gold-bright);">追加鑑定の希望(+¥500/件): <strong id="r_addons"></strong></div>
+    <div class="info-row" id="r_campaignRow" style="display:none;color:#e8c384;font-weight:700;">🎁 キャンペーン適用: 本鑑定(¥2,000相当)は無償のお客様です(追加鑑定のみ実費)</div>
   </div>
 
   <div class="panel">
@@ -809,7 +810,11 @@ function renderCompletion(data, isFreshSubmit){
 
   // 支払いボタンを「本鑑定¥2,000」＋「追加鑑定+¥500×件数」の1つのまとまりとして並べ、
   // 合計金額を先に見せることで、複数の決済であっても同時に完了させるべき1つの手続きだと分かるようにする。
-  const total = 2000 + addonLabels.length*500;
+  // data.campaignが付いている(campaign.html経由の申込み)場合、本鑑定¥2,000は請求せず、
+  // 追加鑑定だけが実費になる。誇大な「あなたは当選しました」演出はせず、単に決済ボタンを
+  // 出さないだけにする(判定自体は鑑定師が手動で先着10名かどうかを確認する前提)。
+  const isCampaign = !!data.campaign;
+  const total = (isCampaign?0:2000) + addonLabels.length*500;
   document.getElementById('payTotal').textContent = '¥' + total.toLocaleString();
   const payArea = document.getElementById('payButtons');
   payArea.innerHTML='';
@@ -834,7 +839,15 @@ function renderCompletion(data, isFreshSubmit){
   // Stripe側では入力済み(編集は可能)の状態で表示され、re-typeの手間を無くす。
   const emailQS = email ? '&prefilled_email='+encodeURIComponent(email) : '';
   savePendingAddons(name, email, addonLabels);
-  payArea.appendChild(makeBtn(STRIPE_BASE_URL+'?client_reference_id='+encodeURIComponent(name)+emailQS, '本鑑定のお支払い(¥2,000)'));
+  if(isCampaign){
+    const notice=document.createElement('div');
+    notice.className='notice ok';
+    notice.style.marginBottom='.8rem';
+    notice.textContent='🎁 キャンペーン適用により、本鑑定(¥2,000相当)は無償です。お支払いは不要です。';
+    payArea.appendChild(notice);
+  } else {
+    payArea.appendChild(makeBtn(STRIPE_BASE_URL+'?client_reference_id='+encodeURIComponent(name)+emailQS, '本鑑定のお支払い(¥2,000)'));
+  }
   addonLabels.forEach(label=>{
     payArea.appendChild(makeBtn(
       STRIPE_ADDON_URL+'?client_reference_id='+encodeURIComponent(name+'/'+label)+emailQS,
@@ -890,7 +903,10 @@ function submitCustomer(){
   }
   err.style.display='none';
 
-  const data={name,email,Y,M,D,H:hv===''?null:parseInt(hv),Min:mv===''?null:parseInt(mv),gender,action,period,detail,addons,addonOther};
+  // ?campaign=<キャンペーンID> は、キャンペーンLP(campaign.html)経由の申込みだけに付く印。
+  // フォーム自体はキャンペーン専用に分けず、このパラメータで見分けることで実装を一本化している。
+  const campaign=new URLSearchParams(location.search).get('campaign')||'';
+  const data={name,email,Y,M,D,H:hv===''?null:parseInt(hv),Min:mv===''?null:parseInt(mv),gender,action,period,detail,addons,addonOther,campaign};
 
   // この完了画面をURLに保存する。タブが失われる/リロードされる/LINEアプリとの往復で
   // ブラウザが状態を破棄しても、同じURLに戻れば支払いボタンが必ず揃って復元される。
@@ -914,6 +930,9 @@ function initReading(data){
   if(data.detail){
     document.getElementById('r_detail').textContent=data.detail;
     document.getElementById('r_detailRow').style.display='block';
+  }
+  if(data.campaign){
+    document.getElementById('r_campaignRow').style.display='block';
   }
 
   // 追加鑑定(+¥500/件)：希望テーマ名を表示し、テーマごとにコメント欄を1つずつ動的に追加する
