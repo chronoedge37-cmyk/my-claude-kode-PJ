@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>先着10名様 本鑑定 無償キャンペーン｜五行庵 宗玄</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Shippori+Mincho+B1:wght@600;700;800&family=Shippori+Antique+B1&family=Yuji+Syuku&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12112c; --gold:#cfa15c; --gold-bright:#e8c384;
+  --ivory:#f3ecdd; --lavender:#d9d0f0; --panel:#1a1840;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--ink);color:var(--ivory);font-family:'Shippori Antique B1',sans-serif;overflow-x:hidden;}
+h1,h2,h3{font-family:'Shippori Mincho B1',serif;word-break:keep-all;}
+a{color:inherit;}
+
+/* ===== 背景演出(intro-landing.htmlと同じ流れ星) ===== */
+.stars{position:fixed;inset:-10vh -10vw;z-index:0;pointer-events:none;overflow:hidden;}
+.star{position:absolute;border-radius:50%;background:#fff;opacity:0;animation:flow linear infinite;}
+.star.red{background:#e8735c;box-shadow:0 0 8px rgba(232,115,92,.85),0 0 18px rgba(232,115,92,.45);}
+@keyframes flow{
+  0%{transform:translate(0,0);opacity:0;}
+  8%{opacity:1;}
+  85%{opacity:1;}
+  100%{transform:translate(-150vw,150vh);opacity:0;}
+}
+.vignette{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 60% at 50% 20%,rgba(6,7,20,.1) 0%,rgba(6,7,20,.55) 60%,rgba(4,4,14,.92) 100%);}
+main{position:relative;z-index:1;}
+
+.wrap{max-width:620px;margin:0 auto;padding:0 1.4rem;}
+
+/* ===== キャンペーンバッジ ===== */
+.campaign-badge{display:inline-block;font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.16em;
+  color:#1a1206;background:linear-gradient(135deg,var(--gold-bright),var(--gold));
+  padding:.5rem 1.2rem;border-radius:20px;text-transform:uppercase;font-weight:700;margin-bottom:1.4rem;}
+
+/* ===== HERO ===== */
+.hero{padding:6vh 1.4rem 5vh;text-align:center;max-width:620px;margin:0 auto;}
+.eyebrow{font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.32em;color:var(--gold-bright);text-transform:uppercase;margin-bottom:1.4rem;}
+
+.moon{position:relative;width:180px;height:286px;margin:0 auto 1.6rem;}
+.rays{position:absolute;inset:-100px;pointer-events:none;animation:rays-spin 90s linear infinite;}
+.rays-inner{position:absolute;inset:0;animation:rays-breathe 6.5s ease-in-out infinite;}
+.ray{position:absolute;top:50%;left:50%;width:2px;
+  background:linear-gradient(to top,rgba(232,195,132,.8),transparent);
+  transform-origin:50% 100%;}
+.ray.accent{background:linear-gradient(to top,rgba(232,115,92,.8),transparent);}
+@keyframes rays-spin{to{transform:rotate(360deg);}}
+@keyframes rays-breathe{0%,100%{opacity:.6;transform:scale(1);}50%{opacity:1;transform:scale(1.08);}}
+.portrait-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+  filter:drop-shadow(0 0 20px rgba(232,195,132,.7)) drop-shadow(0 0 46px rgba(232,195,132,.4));}
+
+h1.headline{font-size:clamp(1.9rem,7.5vw,2.5rem);font-weight:800;line-height:1.5;margin-bottom:1.4rem;letter-spacing:.02em;}
+h1.headline .accent{color:var(--gold-bright);font-family:'Yuji Syuku',serif;letter-spacing:.06em;}
+.hero-sub{font-size:.86rem;color:var(--lavender);line-height:2;max-width:440px;margin:0 auto 1.6rem;}
+
+.price-row{display:flex;align-items:baseline;justify-content:center;gap:.7rem;margin-bottom:2rem;}
+.price-row .was{font-size:1.1rem;color:var(--lavender);opacity:.6;text-decoration:line-through;}
+.price-row .now{font-family:'Cinzel',serif;font-size:1.7rem;color:var(--gold-bright);font-weight:700;}
+
+.btn-primary{
+  display:inline-block;width:100%;max-width:360px;padding:1.05rem 1.2rem;
+  background:linear-gradient(135deg,var(--gold),#a5793a);
+  color:#1a1206;text-decoration:none;font-family:'Cinzel',serif;font-size:.8rem;
+  letter-spacing:.14em;text-transform:uppercase;font-weight:700;border-radius:2px;
+  box-shadow:0 8px 24px rgba(207,161,92,.28);transition:opacity .2s,transform .2s;}
+.btn-primary:hover{opacity:.92;transform:translateY(-1px);}
+.btn-note{font-size:.72rem;color:var(--lavender);opacity:.7;margin-top:.9rem;}
+
+/* ===== 区切り ===== */
+.divider-orn{display:flex;align-items:center;gap:.8rem;max-width:200px;margin:4vh auto;opacity:.5;}
+.divider-orn::before,.divider-orn::after{content:'';flex:1;height:1px;background:rgba(232,195,132,.4);}
+.divider-orn span{font-size:.7rem;color:var(--gold-bright);}
+
+.section{padding:4vh 1.4rem;max-width:620px;margin:0 auto;}
+.section-head{text-align:center;margin-bottom:2.2rem;}
+.section-head .eyebrow{margin-bottom:.8rem;}
+.section-head h2{font-size:clamp(1.2rem,5vw,1.5rem);line-height:1.6;}
+
+/* ===== 含まれる内容 ===== */
+.include-list{list-style:none;display:flex;flex-direction:column;gap:.8rem;margin-bottom:.5rem;}
+.include-list li{font-size:.88rem;color:var(--ivory);line-height:1.85;padding-left:1.7rem;position:relative;
+  background:rgba(0,0,0,.22);border:1px solid rgba(232,195,132,.22);border-radius:2px;padding:1rem 1.1rem 1rem 2.4rem;}
+.include-list li::before{content:'✦';position:absolute;left:1rem;color:var(--gold-bright);font-size:.8rem;top:1.05rem;}
+
+/* ===== 注意事項 ===== */
+.terms-card{background:rgba(0,0,0,.32);border:1px dashed rgba(232,195,132,.45);border-radius:2px;
+  padding:1.6rem 1.4rem;}
+.terms-card h3{font-size:.95rem;color:var(--gold-bright);margin-bottom:1rem;}
+.terms-card ol{padding-left:1.2rem;display:flex;flex-direction:column;gap:.6rem;}
+.terms-card li{font-size:.8rem;color:var(--lavender);line-height:1.8;}
+.terms-card li strong{color:var(--ivory);}
+
+/* ===== CTA カード ===== */
+.cta-card{
+  background:linear-gradient(180deg,rgba(232,195,132,.08),rgba(0,0,0,.3));
+  border:1px solid rgba(232,195,132,.4);padding:2.4rem 1.6rem;border-radius:3px;text-align:center;margin-top:1rem;}
+.cta-card h3{font-size:1.1rem;margin-bottom:.8rem;}
+.cta-card p{font-size:.84rem;color:var(--lavender);line-height:1.9;margin-bottom:1.6rem;}
+
+.footer-note{text-align:center;padding:5vh 1.4rem 6vh;font-size:.72rem;color:var(--lavender);opacity:.6;line-height:1.95;}
+</style>
+</head>
+<body>
+<div class="stars" id="sf"></div>
+<div class="vignette"></div>
+
+<main>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="eyebrow">Five Elements &amp; Tarot Counsel — <span style="white-space:nowrap">五行庵 宗玄</span></div>
+
+    <div class="campaign-badge">先着10名様 限定</div>
+
+    <div class="moon">
+      <div class="rays"><div class="rays-inner" id="rays"></div></div>
+      <img class="portrait-img" src="assets/portrait/sougen.png" alt="宗玄" onerror="this.remove()">
+    </div>
+
+    <h1 class="headline">先着10名様、<br><span class="accent">本鑑定</span>を<br>無償でお届けします</h1>
+
+    <p class="hero-sub">
+      四柱推命×タロットで導く、あなたの「動くべき日」「動いてはいけない日」。<br>
+      通常¥2,000の本鑑定を、先着10名様に限り無償でご提供いたします。
+    </p>
+
+    <div class="price-row">
+      <span class="was">¥2,000</span>
+      <span class="now">→ 無償</span>
+    </div>
+
+    <a class="btn-primary" href="260805.html?mode=customer&amp;campaign=threads10">無償で本鑑定に申し込む</a>
+    <p class="btn-note">入力は3分程度で完了します。先着10名様に達し次第、このページで受付終了をお知らせします。</p>
+  </section>
+
+  <div class="divider-orn"><span>◆</span></div>
+
+  <!-- 含まれる内容 -->
+  <section class="section">
+    <div class="section-head">
+      <div class="eyebrow">What's Included</div>
+      <h2>本鑑定に含まれるもの</h2>
+    </div>
+    <ul class="include-list">
+      <li>命式・五行バランス診断(あなたの生まれ持った本質)</li>
+      <li>タロットによる「動くべき日」3日の選定と、それぞれの根拠</li>
+      <li>「動いてはいけない日」1日と、その理由</li>
+      <li>あなたの命式・ご相談内容に沿った総合アドバイス</li>
+      <li>鑑定内容をまとめたPDF鑑定報告書</li>
+    </ul>
+  </section>
+
+  <div class="divider-orn"><span>◆</span></div>
+
+  <!-- 注意事項 -->
+  <section class="section">
+    <div class="section-head">
+      <div class="eyebrow">Terms</div>
+      <h2>ご利用にあたっての注意事項</h2>
+    </div>
+    <div class="terms-card">
+      <h3>先着10名様 本鑑定無償キャンペーン</h3>
+      <ol>
+        <li><strong>対象</strong>: 本ページ経由でお申込みいただいた、先着10名様。</li>
+        <li><strong>無償の範囲</strong>: 本鑑定(通常¥2,000)のみ。追加鑑定(恋愛・相性・勝負運・その他、各+¥500)は対象外で、通常通りのお支払いとなります。</li>
+        <li><strong>回数</strong>: お一人様1回までとさせていただきます。</li>
+        <li><strong>受付終了</strong>: 先着10名様に達し次第、このページおよびSNSにて随時「受付終了」をお知らせいたします(自動的なカウンター表示は行っておりません)。</li>
+        <li><strong>鑑定内容</strong>: 通常の有料鑑定と同一のクオリティ・分量でお届けします。</li>
+        <li><strong>換金・返金</strong>: 本キャンペーンによる無償提供分の金銭的な換金・返金はいたしかねます。</li>
+        <li>予告なく内容を変更・早期終了する場合がございます。あらかじめご了承ください。</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section">
+    <div class="cta-card">
+      <h3>先着10名様、まもなく締め切ります</h3>
+      <p>「この日に始めれば大丈夫」という確信を、まずは無償でお受け取りください。</p>
+      <a class="btn-primary" href="260805.html?mode=customer&amp;campaign=threads10">無償で本鑑定に申し込む</a>
+    </div>
+  </section>
+
+  <p class="footer-note">
+    ※ 通常の無料相談(生年月日のみの簡易診断)はこちら → <a href="muryo-soudan.html" style="color:var(--gold-bright);">muryo-soudan.html</a><br>
+    ※ 生死・病気・ギャンブル・合否・呪い等に関する鑑定はお受けできません
+  </p>
+</main>
+
+<script>
+(function(){
+  const rays=document.getElementById('rays');
+  const N=28;
+  for(let i=0;i<N;i++){
+    const r=document.createElement('div');
+    const isAccent=i===9;
+    r.className='ray'+(isAccent?' accent':'');
+    const len=(i%2===0?100:68)+Math.random()*22;
+    r.style.height=len.toFixed(0)+'px';
+    r.style.transform='translate(-50%,-100%) rotate('+(360/N*i)+'deg)';
+    rays.appendChild(r);
+  }
+})();
+(function(){
+  const f=document.getElementById('sf');
+  const N=70;
+  for(let i=0;i<N;i++){
+    const s=document.createElement('div');
+    const isRed=Math.random()<0.07;
+    s.className='star'+(isRed?' red':'');
+    const sz=isRed?(Math.random()*2.4+3.2):(Math.random()*1.6+0.8);
+    s.style.width=sz.toFixed(2)+'px';s.style.height=sz.toFixed(2)+'px';
+    s.style.top=(Math.random()*130-15)+'%';
+    s.style.left=(Math.random()*130-15)+'%';
+    s.style.animationDuration=(Math.random()*9+7)+'s';
+    s.style.animationDelay=(Math.random()*-14)+'s';
+    f.appendChild(s);
+  }
+})();
+</script>
+</body>
+</html>
