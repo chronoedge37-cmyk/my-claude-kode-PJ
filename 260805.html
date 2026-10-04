@@ -107,6 +107,30 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
 .hint{font-size:.74rem;color:var(--lavender);opacity:.65;margin-top:.4rem;line-height:1.7;}
 .hint code{background:rgba(232,195,132,.12);color:var(--gold-bright);padding:.1rem .35rem;border-radius:2px;font-size:.9em;white-space:nowrap;}
 
+/* ===== 音声入力(無料・ブラウザ標準のWeb Speech APIのみ、未対応環境では自動で非表示) ===== */
+.voice-dictate-btn{display:inline-flex;align-items:center;gap:.4rem;background:rgba(232,195,132,.1);
+  border:1px dashed rgba(232,195,132,.5);color:var(--gold-bright);font-size:.74rem;padding:.4rem .8rem;
+  border-radius:20px;cursor:pointer;margin-top:.5rem;}
+.voice-dictate-btn.listening{background:rgba(232,115,92,.18);border-color:#e29a8a;animation:vpulse 1.1s ease-in-out infinite;}
+@keyframes vpulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+
+/* ===== Web版鑑定書(お客様向け・ページめくりビューア) ===== */
+/* .pr-*(枠・透かし・章立て)は既存のPDF用スタイルをそのまま流用し、PDF版とWeb版で
+   見た目が一致するようにしている(buildReportPages()が両方に同じHTMLを渡す)。 */
+.flip-toolbar{display:flex;gap:.7rem;margin-bottom:1.2rem;}
+.flip-toolbar .btn-secondary{margin-top:0;}
+.flip-stage{position:relative;width:100%;min-height:200px;perspective:1800px;
+  background:rgba(0,0,0,.15);border:1px solid rgba(232,195,132,.25);border-radius:3px;
+  overflow:hidden;display:flex;justify-content:center;padding:1rem 0;}
+.flip-page-outer{position:relative;overflow:hidden;}
+.flip-page-inner{width:794px;transform-origin:top left;will-change:transform,opacity;}
+.flip-nav{display:flex;align-items:center;justify-content:space-between;margin-top:1rem;}
+.flip-nav-btn{background:none;border:1px solid rgba(232,195,132,.5);color:var(--gold-bright);
+  font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.08em;padding:.6rem 1.1rem;
+  border-radius:1px;cursor:pointer;}
+.flip-nav-btn:disabled{opacity:.35;cursor:not-allowed;}
+.flip-indicator{font-size:.8rem;color:var(--lavender);}
+
 #reportOutput{
   background:rgba(0,0,0,.25);border:1px solid rgba(232,195,132,.3);
   padding:1.4rem;font-size:.86rem;line-height:1.95;white-space:pre-wrap;
@@ -264,7 +288,8 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
     <div class="field">
       <label>新しく「始めたいこと」を具体的に<span class="req">*</span></label>
       <textarea id="c_action" placeholder="例：転職活動を始めたい。今の職場に3年勤めていて待遇に不満はないが、成長できている実感がなく、異業種への転職も含めて動き出すか迷っている。"></textarea>
-      <div class="hint">💡 上でジャンルを選ぶと書き出しを自動で入れます。背景や状況もあわせて書いていただくと、より具体的な鑑定が可能になります。</div>
+      <button type="button" class="voice-dictate-btn" id="actionVoiceBtn" onclick="startVoiceDictation('c_action','actionVoiceBtn')">🎙️ 声で入力する</button>
+      <div class="hint">💡 上でジャンルを選ぶと書き出しを自動で入れます。背景や状況もあわせて書いていただくと、より具体的な鑑定が可能になります。入力が大変な場合は🎙️声でも入力いただけます。</div>
     </div>
     <div class="field">
       <label>いつ頃までに始めたいか<span class="req">*</span></label>
@@ -275,7 +300,8 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
     <div class="field">
       <label>今の状況や気になっていること(任意)</label>
       <textarea id="c_detail" placeholder="例：転職するとしたら未経験の業種になるので不安がある。家族にはまだ話していない。今の職場は人間関係は悪くないが評価制度に納得感がない、など"></textarea>
-      <div class="hint">💡 具体的に書いていただくほど、あなただけの結論をお伝えしやすくなります。空欄でも申込みは可能です。</div>
+      <button type="button" class="voice-dictate-btn" id="detailVoiceBtn" onclick="startVoiceDictation('c_detail','detailVoiceBtn')">🎙️ 声で入力する</button>
+      <div class="hint">💡 具体的に書いていただくほど、あなただけの結論をお伝えしやすくなります。空欄でも申込みは可能です。手が離せない時は🎙️声でも入力いただけます。</div>
     </div>
   </div>
 
@@ -465,6 +491,35 @@ table.dayun-mini tr.now td{color:var(--gold-bright);font-weight:700;}
   <button class="btn-secondary" onclick="copyReport()">クリップボードにコピー</button>
   <button class="btn-secondary" id="exportPdfBtn" onclick="exportPDF()">PDFで保存</button>
   <div class="copied-msg" id="copiedMsg">コピーしました ✓</div>
+
+  <div class="commentary-box" style="border-color:rgba(182,166,223,.5);background:rgba(182,166,223,.06);margin-top:1.4rem;">
+    <span class="lbl" style="color:var(--lavender);">📱 お客様がWebだけで読める鑑定書リンク</span>
+    <div class="hint" style="margin-top:0;margin-bottom:.8rem;">
+      💡 印刷不要・LINEだけで完結する鑑定書を、今入力中の内容でその場で作成します。ページをめくる形式で表示され、🔊読み上げにも対応しています。内容を直すたびに作り直してください(リンクはその時点の内容を埋め込むため、後から自動更新はされません)。
+    </div>
+    <button class="btn-secondary" type="button" onclick="copyReportLink()">このWeb鑑定書のURLを作成してコピー</button>
+    <div class="copied-msg" id="reportLinkCopiedMsg" style="display:none;">コピーしました ✓ LINEのメッセージ等に貼ってお客様に送ってください</div>
+  </div>
+</div>
+
+<!-- ===================== Web版鑑定書(お客様向け・印刷不要・ページめくり表示) ===================== -->
+<div id="modeReport" class="wrap" style="display:none">
+  <div class="eyebrow">Web Reading · 鑑定書(Web版)</div>
+  <h1 class="page-title">鑑定報告書</h1>
+  <p class="page-sub">印刷不要、このページだけで鑑定の内容をすべてご覧いただけます。ページをめくって次にお進みください。🔊ボタンで読み上げも可能です。</p>
+  <div class="flip-toolbar">
+    <button class="btn-secondary" id="rep_speakBtn" onclick="toggleReportSpeak()">🔊 このページを読み上げる</button>
+    <button class="btn-secondary" id="rep_pdfBtn" onclick="exportPDF()">📥 PDFも保存する</button>
+  </div>
+  <div class="flip-stage" id="flipStage">
+    <div id="flipViewport"></div>
+  </div>
+  <div class="flip-nav">
+    <button class="flip-nav-btn" id="flipPrevBtn" onclick="flipTo(-1)">‹ 前のページ</button>
+    <span class="flip-indicator" id="flipIndicator"></span>
+    <button class="flip-nav-btn" id="flipNextBtn" onclick="flipTo(1)">次のページ ›</button>
+  </div>
+  <p class="hint" style="text-align:center;margin-top:1.2rem;">この鑑定書は五行庵 宗玄からあなただけに向けてお届けしています。</p>
 </div>
 
 <!-- ===================== 印刷用(PDF保存用)レイアウト ===================== -->
@@ -608,6 +663,32 @@ function dec(str){
     return JSON.parse(new TextDecoder().decode(bytes));
   }catch(e){}
   try{return JSON.parse(decodeURIComponent(atob(str)));}catch(e){return null;} // 旧方式で発行済みのURL用フォールバック
+}
+
+// ===== 音声入力(無料・ブラウザ標準のWeb Speech APIのみ) =====
+// 「①始めたいこと」「③今の状況」は長文になりやすく、特に外出先や手が離せない時の入力の
+// 負担が大きい。音声認識で話した内容をそのままテキスト欄に追記することで、タイピングなしで
+// 鑑定依頼ができる(障害や多忙でも「言葉で占える」という訴求の一部)。未対応ブラウザ
+// (LINEアプリ内蔵ブラウザ等)ではボタン自体を表示しない。
+const SR_CLASS_C = window.SpeechRecognition || window.webkitSpeechRecognition;
+(function(){
+  if(!SR_CLASS_C){
+    ['actionVoiceBtn','detailVoiceBtn'].forEach(id=>{const b=document.getElementById(id); if(b) b.style.display='none';});
+  }
+})();
+function startVoiceDictation(targetId, btnId){
+  if(!SR_CLASS_C)return;
+  const ta=document.getElementById(targetId), btn=document.getElementById(btnId);
+  const rec=new SR_CLASS_C();
+  rec.lang='ja-JP';rec.interimResults=false;rec.maxAlternatives=1;
+  btn.classList.add('listening');
+  rec.onresult=(e)=>{
+    const t=e.results[0][0].transcript.trim();
+    ta.value = ta.value.trim() ? ta.value.trim()+'\n'+t : t;
+  };
+  rec.onerror=()=>{};
+  rec.onend=()=>{ btn.classList.remove('listening'); };
+  try{ rec.start(); }catch(e){ btn.classList.remove('listening'); }
 }
 
 // ===== 無料診断からの生年月日引き継ぎ =====
@@ -1205,6 +1286,23 @@ function copyDraftUrl(){
   });
 }
 
+// お客様がWebだけで(印刷不要で)読める鑑定書リンクを作る。下書き(draft=と同じ形)を
+// 新たに ?mode=report&d=...&c=... というURLへ埋め込む。dはこの鑑定師ページ自身が
+// 開かれているURLのd(お客様情報)をそのまま再利用し、cにはcollectDraft()と同じ形の
+// コメント一式を載せる(initCustomerReport()がapplyDraft()で読み戻せる形)。
+function copyReportLink(){
+  const d=new URLSearchParams(location.search).get('d');
+  if(!d)return;
+  const draft=collectDraft();
+  const base=location.href.split('?')[0];
+  const url=base+'?mode=report&d='+encodeURIComponent(d)+'&c='+encodeURIComponent(enc(draft));
+  copyTextToClipboard(withExternalBrowserHint(url), ()=>{
+    const msg=document.getElementById('reportLinkCopiedMsg');
+    msg.style.display='block';
+    setTimeout(()=>{msg.style.display='none';},4000);
+  });
+}
+
 // ===== LINEアプリ内ブラウザの検出と警告 =====
 // LINEの内蔵ブラウザは印刷(window.print())に対応しておらず、保存領域(localStorage)も
 // 不安定なため、「印刷が反応しない」「下書きが未入力に戻る」という問い合わせの大半はこれが原因。
@@ -1735,9 +1833,192 @@ function buildReportBlocks(data,bz,c,amuletFile){
 // 各ブロックの実際の描画高さを一度計測してから、1ページに収まる分だけを貪欲法で束ね、
 // ページごとに独立した.pr-frame(二重罫線・透かし・四隅の飾り・ページ番号)をhtml2canvasで
 // 個別に画像化し、物理ページ側にも余白(marginMm)を持たせて配置する。
+// 全ブロックを#printArea(794px幅・画面外)へ仮描画して実際の高さを測り、1ページの目安の
+// 高さ(PAGE_BUDGET_PX)に収まるよう貪欲法で束ねる。exportPDF()(PDF化)と、お客様向けの
+// Web版報告書(ページをめくるビューア、initCustomerReport参照)の両方が同じ束ね方を
+// 使うことで、PDFとWeb版でページの切れ目がズレない(どちらも同じ関数を呼ぶため)。
+function measureAndBucketBlocks(contentBlocks){
+  const printArea=document.getElementById('printArea');
+  // ---- 1. 計測用に全ブロックを1枚のフラットな.pr-contentへ仮描画し、実際の高さを測る ----
+  printArea.innerHTML=`<div class="pr-frame"><div class="pr-page"><div class="pr-content">
+    ${contentBlocks.map((b,i)=>`<div class="pr-block" data-i="${i}">${b}</div>`).join('')}
+  </div></div></div>`;
+  const blockEls=Array.from(printArea.querySelectorAll('.pr-block'));
+  const tops=blockEls.map(el=>el.offsetTop);
+  const heights=blockEls.map((el,i)=>i<blockEls.length-1?tops[i+1]-tops[i]:el.offsetHeight);
+
+  // ---- 2. 1ページの目安の高さ(px、794px幅のcontent領域基準)に収まるよう貪欲法で束ねる ----
+  // この数値は、物理ページの余白・二重罫線・ページ番号表記を差し引いてもA4 1枚に収まるよう
+  // Playwrightでの実測(exportPDF()と同じ処理を実行し、生成される画像の高さを検証)をもとに
+  // 決めている。ヘッダーブロック(タイトル・命式・五行レーダー)は必ず1ページ目の先頭に置く。
+  const PAGE_BUDGET_PX=950;
+  const CLOSING_BLOCK_ESTIMATE_PX=190;
+  // 1ページ目は「①命式・五行レーダー・②タロットの展開図」だけを乗せる画像主体のページに
+  // 固定する(本文が始まる前に、見た目だけで内容の豊かさが伝わる1枚を独立させるための
+  // 明示的な指示による)。ヘッダーブロックの後に必ず改ページし、本文(①②の文章以降)は
+  // 空きがあっても1ページ目には詰め込まない。
+  const pages=[[0],[]];
+  let used=0;
+  for(let i=1;i<contentBlocks.length;i++){
+    const h=heights[i];
+    if(used>0 && used+h>PAGE_BUDGET_PX){ pages.push([]); used=0; }
+    pages[pages.length-1].push(i);
+    used+=h;
+  }
+  // 総合アドバイス等で最後のページがほぼ埋まっている場合、末尾の挨拶文だけを既存ページに
+  // 詰め込むとその物理ページからはみ出しかねないため、その時は新しいページを用意する。
+  if(used>0 && used+CLOSING_BLOCK_ESTIMATE_PX>PAGE_BUDGET_PX){ pages.push([]); used=0; }
+  pages[pages.length-1].push('closing');
+  used+=CLOSING_BLOCK_ESTIMATE_PX;
+
+  const lastPageIdx=pages.length-1;
+  const leftoverPx=PAGE_BUDGET_PX-used;
+  return {pages,lastPageIdx,leftoverPx};
+}
+
+// buildReportBlocks()のブロック群を実際のページ単位(.pr-frame>.pr-pageのHTML文字列の配列)に
+// 組み立てる。exportPDF()はこれをhtml2canvasで画像化してPDFに、Web版報告書はそのままDOMに
+// 挿入して画面に表示する(見た目が常に一致する)。
+function buildReportPages(data,bz,c,amuletFile){
+  const {contentBlocks,closingBlock}=buildReportBlocks(data,bz,c,amuletFile);
+  const {pages,lastPageIdx,leftoverPx}=measureAndBucketBlocks(contentBlocks);
+
+  // ---- 最終ページに大きな余白が残る場合は、五行に対応するお守り画像で埋める ----
+  const closingIllustrationBlock=`
+    <div class="pr-closing-illustration">
+      ${closingPortraitOrbHtml(dominantElementIndex(c))}
+      <div class="pr-closing-amulet-cap">御守 · 五行庵宗玄 × ${EL[dominantElementIndex(c)]}の加護</div>
+    </div>`;
+  const useFiller=leftoverPx>240;
+
+  return pages.map((idxList,pi)=>{
+    const body=idxList.map(idx=>{
+      if(idx==='closing') return (pi===lastPageIdx&&useFiller?closingIllustrationBlock:'')+closingBlock;
+      return contentBlocks[idx];
+    }).join('');
+    return `<div class="pr-frame"><div class="pr-page">
+      <div class="pr-watermark">${pageWatermarkSVG()}</div>
+      ${cornerFlourishSVG('tl')}${cornerFlourishSVG('tr')}${cornerFlourishSVG('bl')}${cornerFlourishSVG('br')}
+      <div class="pr-content">${body}
+        <div class="pr-page-footer">五行庵 宗玄　・　${pi+1} / ${pages.length}</div>
+      </div>
+    </div></div>`;
+  });
+}
+
+// ===== MODE C: お客様向けWeb版鑑定書(ページをめくるビューア) =====
+// PDFをダウンロード・印刷しなくても、このページだけで鑑定の全文を読める体験を作るための
+// モード。buildReportPages()でPDFと全く同じページ組み立てを再利用するので、見た目は
+// PDFと常に一致する(透かし・飾り枠・ページ番号もそのまま)。コメント一式はinitReading()が
+// 鑑定師ページ用に作る隠しtextarea(comment_*)へ、applyDraft()(下書き復元と同じ仕組み)で
+// 流し込むことで、buildReportBlocks()を鑑定師ページ用のコードと完全に共有している。
+let reportPages=[];
+let curPage=0;
+function initCustomerReport(data, commentary){
+  initReading(data); // 命式計算・お守り選定・追加鑑定欄の生成(window._rdの設定もここで行われる)
+  applyDraft(commentary);
+  const {data:d2,bz,c}=window._rd;
+  const amuletFile=amuletFileFor(c);
+  reportPages=buildReportPages(d2,bz,c,amuletFile);
+  curPage=0;
+  showReportPage(0,false);
+}
+function scaleFlipPage(){
+  const outer=document.querySelector('#flipViewport .flip-page-outer');
+  const inner=outer&&outer.querySelector('.flip-page-inner');
+  if(!inner)return 1;
+  const stage=document.getElementById('flipStage');
+  const frame=inner.querySelector('.pr-frame');
+  const naturalH=frame?frame.offsetHeight:1000;
+  const stageW=Math.max(stage.clientWidth-32,240);
+  const scale=Math.min(1, stageW/794);
+  inner.dataset.scale=scale;
+  inner.style.transform=`scale(${scale})`;
+  outer.style.width=(794*scale)+'px';
+  outer.style.height=(naturalH*scale)+'px';
+  stage.style.height=(naturalH*scale+32)+'px';
+  return scale;
+}
+function showReportPage(idx, animate){
+  if(!reportPages.length)return;
+  idx=Math.max(0,Math.min(reportPages.length-1,idx));
+  const dir = idx>=curPage ? 1 : -1;
+  const vp=document.getElementById('flipViewport');
+  const old=vp.firstElementChild;
+  stopReportSpeak();
+  const doRender=()=>{
+    vp.innerHTML=`<div class="flip-page-outer"><div class="flip-page-inner">${reportPages[idx]}</div></div>`;
+    const inner=vp.firstElementChild.firstElementChild;
+    const scale=scaleFlipPage();
+    if(animate){
+      inner.style.transition='none';
+      inner.style.opacity='0';
+      inner.style.transform=`scale(${scale}) rotateY(${dir>0?70:-70}deg)`;
+      requestAnimationFrame(()=>{
+        inner.style.transition='transform .42s ease, opacity .42s ease';
+        inner.style.opacity='1';
+        inner.style.transform=`scale(${scale}) rotateY(0deg)`;
+      });
+    }
+  };
+  curPage=idx;
+  const oldInner=old&&old.firstElementChild;
+  if(animate && oldInner){
+    const oldScale=oldInner.dataset.scale||1;
+    oldInner.style.transition='transform .26s ease, opacity .26s ease';
+    oldInner.style.opacity='0';
+    oldInner.style.transform=`scale(${oldScale}) rotateY(${dir>0?-70:70}deg)`;
+    setTimeout(doRender,240);
+  } else {
+    doRender();
+  }
+  updateFlipNav();
+}
+function flipTo(delta){ showReportPage(curPage+delta, true); }
+function updateFlipNav(){
+  const prev=document.getElementById('flipPrevBtn'), next=document.getElementById('flipNextBtn'), ind=document.getElementById('flipIndicator');
+  if(!prev)return;
+  prev.disabled = curPage<=0;
+  next.disabled = curPage>=reportPages.length-1;
+  ind.textContent = reportPages.length ? (curPage+1)+' / '+reportPages.length : '';
+}
+// 読み上げはブラウザ標準のspeechSynthesis(無料)のみを使う。未対応環境ではボタンを隠す
+// (目や手が不自由な方・多忙な方にも「言葉で」結果を届けられることの訴求だが、対応端末が
+// 前提であり、未対応環境でボタンだけ残すと押しても無反応という壊れた見た目になるため)。
+let _reportSpeaking=false;
+(function(){
+  if(!('speechSynthesis' in window)){
+    const b=document.getElementById('rep_speakBtn'); if(b) b.style.display='none';
+  }
+})();
+function toggleReportSpeak(){
+  if(!('speechSynthesis' in window))return;
+  if(_reportSpeaking){ stopReportSpeak(); return; }
+  const contentEl=document.querySelector('#flipViewport .pr-content');
+  if(!contentEl)return;
+  const text=contentEl.innerText.replace(/\s+/g,' ').trim();
+  if(!text)return;
+  const btn=document.getElementById('rep_speakBtn');
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='ja-JP';u.rate=1.0;
+  u.onend=()=>{ _reportSpeaking=false; if(btn){btn.classList.remove('speaking');btn.textContent='🔊 このページを読み上げる';} };
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+  _reportSpeaking=true;
+  if(btn){btn.classList.add('speaking');btn.textContent='⏸ 読み上げを止める';}
+}
+function stopReportSpeak(){
+  if(!('speechSynthesis' in window))return;
+  window.speechSynthesis.cancel();
+  _reportSpeaking=false;
+  const btn=document.getElementById('rep_speakBtn');
+  if(btn){btn.classList.remove('speaking');btn.textContent='🔊 このページを読み上げる';}
+}
+window.addEventListener('resize', ()=>{ if(document.getElementById('modeReport').style.display==='block') scaleFlipPage(); });
+
 async function exportPDF(){
   if(!window._rd)return;
-  const btn=document.getElementById('exportPdfBtn');
+  const btn=document.getElementById('exportPdfBtn')||document.getElementById('rep_pdfBtn');
   const origText=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='PDFを生成中…';}
   const {data,bz,c}=window._rd;
@@ -1745,65 +2026,12 @@ async function exportPDF(){
   const printArea=document.getElementById('printArea');
 
   try{
-    const {contentBlocks,closingBlock}=buildReportBlocks(data,bz,c,amuletFile);
-
-    // ---- 1. 計測用に全ブロックを1枚のフラットな.pr-contentへ仮描画し、実際の高さを測る ----
-    printArea.innerHTML=`<div class="pr-frame"><div class="pr-page"><div class="pr-content">
-      ${contentBlocks.map((b,i)=>`<div class="pr-block" data-i="${i}">${b}</div>`).join('')}
-    </div></div></div>`;
-    const blockEls=Array.from(printArea.querySelectorAll('.pr-block'));
-    const tops=blockEls.map(el=>el.offsetTop);
-    const heights=blockEls.map((el,i)=>i<blockEls.length-1?tops[i+1]-tops[i]:el.offsetHeight);
-
-    // ---- 2. 1ページの目安の高さ(px、794px幅のcontent領域基準)に収まるよう貪欲法で束ねる ----
-    // この数値は、物理ページの余白・二重罫線・ページ番号表記を差し引いてもA4 1枚に収まるよう
-    // Playwrightでの実測(exportPDF()と同じ処理を実行し、生成される画像の高さを検証)をもとに
-    // 決めている。ヘッダーブロック(タイトル・命式・五行レーダー)は必ず1ページ目の先頭に置く。
-    const PAGE_BUDGET_PX=950;
-    const CLOSING_BLOCK_ESTIMATE_PX=190;
-    // 1ページ目は「①命式・五行レーダー・②タロットの展開図」だけを乗せる画像主体のページに
-    // 固定する(本文が始まる前に、見た目だけで内容の豊かさが伝わる1枚を独立させるための
-    // 明示的な指示による)。ヘッダーブロックの後に必ず改ページし、本文(①②の文章以降)は
-    // 空きがあっても1ページ目には詰め込まない。
-    const pages=[[0],[]];
-    let used=0;
-    for(let i=1;i<contentBlocks.length;i++){
-      const h=heights[i];
-      if(used>0 && used+h>PAGE_BUDGET_PX){ pages.push([]); used=0; }
-      pages[pages.length-1].push(i);
-      used+=h;
-    }
-    // 総合アドバイス等で最後のページがほぼ埋まっている場合、末尾の挨拶文だけを既存ページに
-    // 詰め込むとその物理ページからはみ出しかねないため、その時は新しいページを用意する。
-    if(used>0 && used+CLOSING_BLOCK_ESTIMATE_PX>PAGE_BUDGET_PX){ pages.push([]); used=0; }
-    pages[pages.length-1].push('closing');
-    used+=CLOSING_BLOCK_ESTIMATE_PX;
-
-    // ---- 3. 最終ページに大きな余白が残る場合は、五行に対応するお守り画像で埋める ----
-    const lastPageIdx=pages.length-1;
-    const leftoverPx=PAGE_BUDGET_PX-used;
-    const closingIllustrationBlock=`
-      <div class="pr-closing-illustration">
-        ${closingPortraitOrbHtml(dominantElementIndex(c))}
-        <div class="pr-closing-amulet-cap">御守 · 五行庵宗玄 × ${EL[dominantElementIndex(c)]}の加護</div>
-      </div>`;
-    const useFiller=leftoverPx>240;
-
-    // ---- 4. ページごとに独立した.pr-frameを組み立てて、1ページ=1画像としてPDFに配置する ----
+    // ---- ページ単位のHTMLを組み立て、1ページ=1画像としてPDFに配置する ----
+    const pageHtmls=buildReportPages(data,bz,c,amuletFile);
     printArea.innerHTML='';
-    const pageEls=pages.map((idxList,pi)=>{
-      const body=idxList.map(idx=>{
-        if(idx==='closing') return (pi===lastPageIdx&&useFiller?closingIllustrationBlock:'')+closingBlock;
-        return contentBlocks[idx];
-      }).join('');
+    const pageEls=pageHtmls.map(html=>{
       const wrap=document.createElement('div');
-      wrap.innerHTML=`<div class="pr-frame"><div class="pr-page">
-        <div class="pr-watermark">${pageWatermarkSVG()}</div>
-        ${cornerFlourishSVG('tl')}${cornerFlourishSVG('tr')}${cornerFlourishSVG('bl')}${cornerFlourishSVG('br')}
-        <div class="pr-content">${body}
-          <div class="pr-page-footer">五行庵 宗玄　・　${pi+1} / ${pages.length}</div>
-        </div>
-      </div></div>`;
+      wrap.innerHTML=html;
       const el=wrap.firstElementChild;
       printArea.appendChild(el);
       return el;
@@ -1877,6 +2105,11 @@ function saveSetup(){
     document.getElementById('modeReading').style.display='block';initReading(data);
     initCommentaryDraft(d);
     showLineBrowserWarnIfNeeded('lineWarnReading');
+  } else if(mode==='report'&&d&&p.get('c')){
+    const data=dec(d), commentary=dec(p.get('c'));
+    if(!data||!commentary){document.getElementById('modeError').style.display='block';return;}
+    document.getElementById('modeReport').style.display='block';
+    initCustomerReport(data, commentary);
   } else if(mode==='setup'){
     document.getElementById('modeSetup').style.display='block';initSetup();
   } else {
